@@ -20,18 +20,6 @@ uv run pytest          # all tests must stay green
 uv run ruff check .    # must stay clean
 ```
 
-## Development discipline
-
-- **TDD, strictly.** Write one failing test. Run pytest and see it red.
-  Implement the minimum to go green. Run ruff. Move to the next test.
-  Never implement behavior that no failing test demands.
-- **No mocks.** Use real objects and real I/O scoped to `tmp_path` or
-  constructor-injected dependencies. `capsys` and `monkeypatch.chdir` are
-  fine — they redirect real I/O, they don't mock.
-- **Pydantic for types**, not `@dataclass`.
-- **No speculative abstractions.** Don't introduce features, fallbacks, or
-  configurability that no test or user need has demanded.
-
 ## Commit style
 
 - **Small, focused commits.** One concern per commit. Impl and the tests
