@@ -11,6 +11,7 @@ class Chunk(BaseModel):
     text: str
     line_start: int
     line_end: int
+    section_path: list[str] = []
 
 
 def _line_number_at(text: str, char_index: int) -> int:
@@ -28,11 +29,14 @@ def chunk_document(
         "markdown", lang="en", tokenizer="cl100k_base", chunk_size=chunk_size
     )
     raw_chunks = chunker(doc.text)
-    return [
-        Chunk(
+    chunks: list[Chunk] = []
+    for c in raw_chunks:
+        line_start = _line_number_at(doc.text, c.start_index)
+        line_end = _line_number_at(doc.text, max(c.end_index - 1, c.start_index))
+        chunks.append(Chunk(
             text=c.text,
-            line_start=_line_number_at(doc.text, c.start_index),
-            line_end=_line_number_at(doc.text, max(c.end_index - 1, c.start_index)),
-        )
-        for c in raw_chunks
-    ]
+            line_start=line_start,
+            line_end=line_end,
+            section_path=doc.section_path_for_line(line_start),
+        ))
+    return chunks
