@@ -94,3 +94,24 @@ def normalize(path: Path | str) -> NormalizedDoc:
         text=text,
         sections=_parse_sections(text),
     )
+
+
+def _main(argv: list[str]) -> int:
+    import sys
+    if len(argv) != 2:
+        print("usage: python -m highlighter.normalize <markdown-file>", file=sys.stderr)
+        return 1
+    doc = normalize(argv[1])
+    print(f"source:  {doc.source_path}")
+    print(f"sha256:  {doc.content_hash}")
+    print(f"sections: {len(doc.sections)}")
+    print()
+    for s in doc.sections:
+        indent = "  " * (s.level - 1)
+        print(f"{indent}{'#' * s.level} {s.title}  (L{s.line_start}-{s.line_end})")
+    return 0
+
+
+if __name__ == "__main__":
+    import sys
+    raise SystemExit(_main(sys.argv))

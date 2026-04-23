@@ -1,6 +1,8 @@
 import hashlib
 from pathlib import Path
 
+import pytest
+
 from highlighter.normalize import normalize
 
 
@@ -127,6 +129,38 @@ def test_section_line_end_runs_until_next_same_or_shallower_heading(tmp_path: Pa
     assert ends["A2"] == 6
     # B (h1) runs to EOF → line 8
     assert ends["B"] == 8
+
+
+def test_cli_prints_section_tree(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    md = tmp_path / "doc.md"
+    md.write_text("# Top\n\n## Middle\n\n### Leaf\n")
+
+    from highlighter.normalize import _main
+
+    rc = _main(["prog", str(md)])
+    captured = capsys.readouterr()
+
+    assert rc == 0
+    assert "Top" in captured.out
+    assert "Middle" in captured.out
+    assert "Leaf" in captured.out
+
+
+def test_cli_rejects_missing_argument(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from highlighter.normalize import _main
+
+    rc = _main(["prog"])
+    captured = capsys.readouterr()
+
+    assert rc != 0
+    assert "usage" in captured.err.lower()
 
 
 def test_section_path_for_line_returns_heading_hierarchy(tmp_path: Path) -> None:
