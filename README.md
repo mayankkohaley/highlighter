@@ -39,20 +39,53 @@ rather than retrieving one passage.
 Markdown input only — PDF support will slot in behind the same interface
 later.
 
-## Stage 0 — normalize
+## Command-line usage
+
+Only Stage 0 currently has a CLI. Stages 1, 2, and 3 are Python-only;
+they'll grow entry points as the pipeline comes together.
+
+### `highlighter.normalize`
 
 ```
-python -m highlighter.normalize path/to/doc.md
+uv run python -m highlighter.normalize <markdown-file>
 ```
 
-Prints the content hash and the parsed heading tree with line ranges.
+| Arg              | Required | Description                                   |
+| ---------------- | -------- | --------------------------------------------- |
+| `<markdown-file>` | yes      | Path to a markdown document to normalize.     |
 
-Programmatic:
+No flags. Reads the file, normalizes whitespace and line endings,
+parses the heading hierarchy, and prints:
+
+- the source path
+- the sha256 of the raw bytes
+- the number of parsed sections
+- an indented heading tree, one heading per line, with 1-indexed line
+  ranges (`L{start}-L{end}`)
+
+Example:
+
+```
+$ uv run python -m highlighter.normalize tmp/agentcore-get-started-cli.md
+source:  tmp/agentcore-get-started-cli.md
+sha256:  ceed3dcc0035ab6da706681e91d3b5201b74194366d7b7b114752f0f043a80b6
+sections: 13
+
+# Get started with Amazon Bedrock AgentCore  (L3-209)
+  ## Prerequisites  (L14-21)
+  ## Step 1: Install the AgentCore CLI  (L22-47)
+    ### Opt into the preview channel  (L37-47)
+  ...
+```
+
+Exit codes: `0` on success, `1` if no path argument is given.
+
+## Stage 0 — normalize (programmatic)
 
 ```python
 from highlighter.normalize import normalize
 
-doc = normalize("path/to/doc.md")
+doc = normalize("path/to/doc.md")  # same behavior as the CLI, callable form
 doc.text                          # normalized markdown (LF, trimmed)
 doc.content_hash                  # sha256 of the original bytes
 doc.sections                      # list[Section] with (level, title, line_start, line_end)
