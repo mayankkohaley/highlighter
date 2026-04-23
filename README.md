@@ -31,7 +31,7 @@ rather than retrieving one passage.
    prefer paragraph/heading boundaries. *(implemented)*
 3. **Per-chunk extraction** — for each chunk, ask an LLM to return verbatim
    spans relevant to the query. Verify each returned span actually appears
-   in the chunk.
+   in the chunk. *(implemented)*
 4. **Consolidate** — dedupe overlapping excerpts, merge adjacent spans.
 5. **Synthesize** — final LLM call answers the question using only the
    consolidated excerpts, with citations.
@@ -78,6 +78,37 @@ for c in chunks:
     c.line_end        # 1-indexed end line, inclusive
     c.section_path    # heading hierarchy at line_start
 ```
+
+## Stage 3 — extract
+
+Asks a [pydantic-ai](https://ai.pydantic.dev) agent (default:
+`anthropic:claude-haiku-4-5-20251001`) for verbatim spans from a single
+chunk that address the query, then verifies each returned span actually
+appears as a substring before attaching citation metadata. Verified
+excerpts are the only spans that reach downstream stages.
+
+```python
+from highlighter.extract import build_extractor_agent, extract_excerpts
+from highlighter.query import Query
+
+query = Query(
+    question="What are the prerequisites for deploying?",
+    sub_questions=["Which AWS services are required?", "What IAM permissions?"],
+    rubric="Useful excerpts name specific software, permissions, or accounts.",
+)
+
+for chunk in chunks:
+    for excerpt in extract_excerpts(chunk, query):
+        excerpt.text               # verbatim span from the chunk
+        excerpt.which_subquestion  # which sub-question it addresses (or None)
+        excerpt.confidence         # extractor-reported confidence
+        excerpt.line_start         # citation: inherited from chunk
+        excerpt.section_path
+```
+
+Swap providers via the `model` argument: `build_extractor_agent(model="openai:gpt-4o-mini")`,
+`"ollama:llama3"`, etc. Requires the corresponding API key env var for
+hosted providers (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`).
 
 ## Development
 

@@ -5,7 +5,8 @@ Guidance for any agent (Claude, Codex, humans, etc.) working in this repo.
 ## Project
 
 `highlighter` is an experiment. See [README.md](README.md) for the rationale
-and pipeline sketch. Only Stage 0 (normalize) is implemented.
+and pipeline sketch. Stages 0 (normalize), 2 (chunk), and 3 (extract) are
+implemented. Stage 1 (query expansion), 4 (consolidate), 5 (synthesize) TBD.
 
 ## Setup
 
@@ -35,3 +36,9 @@ uv run ruff check .    # must stay clean
 Stage 0 is **markdown-only** and has **no cache layer** (scoped out by
 the user). Don't pull features from later stages into earlier ones
 unless a test explicitly demands it.
+
+Stage 3 uses [pydantic-ai](https://ai.pydantic.dev) for model-agnostic
+LLM calls. Tests use `FunctionModel` via `agent.override(...)` to stub
+the LLM boundary — this is a legitimate mock per /tdd rules (external
+API, system boundary, dependency-injected). Internal logic (verification,
+citation mapping) is never stubbed.
