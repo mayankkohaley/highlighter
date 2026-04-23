@@ -5,8 +5,8 @@ Guidance for any agent (Claude, Codex, humans, etc.) working in this repo.
 ## Project
 
 `highlighter` is an experiment. See [README.md](README.md) for the rationale
-and pipeline sketch. Stages 0 (normalize), 2 (chunk), and 3 (extract) are
-implemented. Stage 1 (query expansion), 4 (consolidate), 5 (synthesize) TBD.
+and pipeline sketch. Stages 0 (normalize), 1 (expand), 2 (chunk), and 3
+(extract) are implemented. Stages 4 (consolidate) and 5 (synthesize) TBD.
 
 ## Setup
 

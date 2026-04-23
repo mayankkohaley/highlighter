@@ -25,8 +25,8 @@ rather than retrieving one passage.
 
 0. **Normalize** — load the document, normalize whitespace, parse the
    heading hierarchy. *(implemented)*
-1. **Query expansion** — turn the user's question into sub-questions,
-   entities to watch for, and a relevance rubric.
+1. **Query expansion** — turn the user's question into sub-questions
+   and a relevance rubric. *(implemented)*
 2. **Chunk** — split the normalized text into overlapping chunks that
    prefer paragraph/heading boundaries. *(implemented)*
 3. **Per-chunk extraction** — for each chunk, ask an LLM to return verbatim
@@ -78,6 +78,26 @@ for c in chunks:
     c.line_end        # 1-indexed end line, inclusive
     c.section_path    # heading hierarchy at line_start
 ```
+
+## Stage 1 — expand
+
+One LLM call that turns a raw user question into a structured `Query`
+with 3–7 sub-questions and a one-to-two sentence relevance rubric. The
+raw question is passed through verbatim; only the sub-questions and
+rubric come from the LLM.
+
+```python
+from highlighter.expand import expand_query
+
+query = expand_query("What are the prerequisites for deploying an AgentCore agent?")
+query.question       # preserved verbatim
+query.sub_questions  # list[str] filled by the LLM
+query.rubric         # one-to-two sentence relevance anchor
+```
+
+The returned `Query` gets passed unchanged to every chunk reader in
+Stage 3 — that's what keeps relevance judgments consistent across the
+document.
 
 ## Stage 3 — extract
 
