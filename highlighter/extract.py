@@ -30,6 +30,8 @@ class _ExtractorOutput(BaseModel):
 class Excerpt(BaseModel):
     """Verified excerpt with citation metadata attached from the source chunk."""
     text: str
+    which_subquestion: str | None = None
+    confidence: float = 1.0
     line_start: int
     line_end: int
     section_path: list[str]
@@ -63,6 +65,8 @@ def extract_excerpts(
     return [
         Excerpt(
             text=c.text,
+            which_subquestion=c.which_subquestion,
+            confidence=c.confidence,
             line_start=chunk.line_start,
             line_end=chunk.line_end,
             section_path=chunk.section_path,

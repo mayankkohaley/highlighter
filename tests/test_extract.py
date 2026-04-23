@@ -76,6 +76,28 @@ def test_excerpt_inherits_chunk_citation_metadata(tmp_path: Path) -> None:
     assert e.section_path == chunk.section_path
 
 
+def test_which_subquestion_and_confidence_propagate(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nThe quick brown fox jumps over the lazy dog.\n")
+    doc = normalize(md)
+    chunk = chunk_document(doc)[0]
+
+    agent = build_extractor_agent()
+    candidates = [
+        RawExcerpt(
+            text="quick brown fox",
+            which_subquestion="Which animal is described?",
+            confidence=0.82,
+        )
+    ]
+    with agent.override(model=_canned(candidates)):
+        excerpts = extract_excerpts(chunk, Query(question="?"), agent=agent)
+
+    assert len(excerpts) == 1
+    assert excerpts[0].which_subquestion == "Which animal is described?"
+    assert excerpts[0].confidence == 0.82
+
+
 def test_non_substring_candidates_are_dropped(tmp_path: Path) -> None:
     md = tmp_path / "doc.md"
     md.write_text("# Title\n\nThe quick brown fox jumps over the lazy dog.\n")
