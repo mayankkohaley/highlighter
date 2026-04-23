@@ -15,6 +15,7 @@ class Section(BaseModel):
     level: int
     title: str
     line_start: int
+    line_end: int
 
 
 class NormalizedDoc(BaseModel):
@@ -23,6 +24,18 @@ class NormalizedDoc(BaseModel):
     text: str
     sections: list[Section] = []
 
+    def section_path_for_line(self, line: int) -> list[str]:
+        """Return the heading titles (outermost first) containing a 1-indexed line."""
+        stack: list[Section] = []
+        for s in self.sections:
+            if s.line_start > line:
+                break
+            while stack and stack[-1].level >= s.level:
+                stack.pop()
+            if s.line_end >= line:
+                stack.append(s)
+        return [s.title for s in stack]
+
 
 def _normalize_text(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
@@ -30,10 +43,11 @@ def _normalize_text(text: str) -> str:
 
 
 def _parse_sections(text: str) -> list[Section]:
+    lines = text.split("\n")
     sections: list[Section] = []
     in_fence = False
     fence_char = ""
-    for i, line in enumerate(text.split("\n"), start=1):
+    for i, line in enumerate(lines, start=1):
         m_fence = _FENCE_RE.match(line)
         if m_fence:
             marker = m_fence.group(1)
@@ -52,7 +66,21 @@ def _parse_sections(text: str) -> list[Section]:
                 level=len(m.group(1)),
                 title=m.group(2).strip(),
                 line_start=i,
+                line_end=i,  # filled in below
             ))
+
+    # Each section runs until the next same-or-shallower heading, or EOF.
+    # Trailing blank lines at EOF are excluded from the final section's range.
+    eof_line = len(lines)
+    while eof_line > 0 and lines[eof_line - 1] == "":
+        eof_line -= 1
+    for idx, sec in enumerate(sections):
+        end = eof_line
+        for j in range(idx + 1, len(sections)):
+            if sections[j].level <= sec.level:
+                end = sections[j].line_start - 1
+                break
+        sec.line_end = end
     return sections
 
 

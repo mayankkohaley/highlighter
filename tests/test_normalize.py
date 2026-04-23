@@ -101,3 +101,50 @@ def test_headings_inside_fenced_code_blocks_are_ignored(tmp_path: Path) -> None:
     doc = normalize(md)
 
     assert [(s.level, s.title) for s in doc.sections] == [(1, "Real"), (2, "After")]
+
+
+def test_section_line_end_runs_until_next_same_or_shallower_heading(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    md.write_text(
+        "# A\n"        # line 1
+        "body a\n"     # line 2
+        "## A1\n"      # line 3
+        "body a1\n"    # line 4
+        "## A2\n"      # line 5
+        "body a2\n"    # line 6
+        "# B\n"        # line 7
+        "body b\n"     # line 8
+    )
+
+    doc = normalize(md)
+    ends = {s.title: s.line_end for s in doc.sections}
+
+    # A (h1) runs until B (h1) starts → up to line 6
+    assert ends["A"] == 6
+    # A1 (h2) runs until A2 (h2) starts → up to line 4
+    assert ends["A1"] == 4
+    # A2 (h2) runs until B (h1) starts → up to line 6
+    assert ends["A2"] == 6
+    # B (h1) runs to EOF → line 8
+    assert ends["B"] == 8
+
+
+def test_section_path_for_line_returns_heading_hierarchy(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    md.write_text(
+        "# A\n"        # line 1
+        "body a\n"     # line 2
+        "## A1\n"      # line 3
+        "body a1\n"    # line 4
+        "## A2\n"      # line 5
+        "body a2\n"    # line 6
+        "# B\n"        # line 7
+        "body b\n"     # line 8
+    )
+
+    doc = normalize(md)
+
+    assert doc.section_path_for_line(2) == ["A"]
+    assert doc.section_path_for_line(4) == ["A", "A1"]
+    assert doc.section_path_for_line(6) == ["A", "A2"]
+    assert doc.section_path_for_line(8) == ["B"]
