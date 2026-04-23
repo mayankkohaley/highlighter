@@ -1,7 +1,7 @@
 """Stage 2: chunk a normalized document into overlapping, boundary-aware pieces."""
 from __future__ import annotations
 
-from chonkie import RecursiveChunker
+from chonkie import OverlapRefinery, RecursiveChunker
 from pydantic import BaseModel
 
 from highlighter.normalize import NormalizedDoc
@@ -28,7 +28,14 @@ def chunk_document(
     chunker = RecursiveChunker.from_recipe(
         "markdown", lang="en", tokenizer="cl100k_base", chunk_size=chunk_size
     )
-    raw_chunks = chunker(doc.text)
+    refinery = OverlapRefinery(
+        tokenizer="cl100k_base",
+        context_size=chunk_overlap,
+        mode="token",
+        method="prefix",
+        merge=True,
+    )
+    raw_chunks = refinery(chunker(doc.text))
     chunks: list[Chunk] = []
     for c in raw_chunks:
         line_start = _line_number_at(doc.text, c.start_index)

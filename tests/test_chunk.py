@@ -64,3 +64,19 @@ def test_chunk_section_path_matches_doc_at_line_start(tmp_path: Path) -> None:
     assert len(chunks) >= 2
     for c in chunks:
         assert c.section_path == doc.section_path_for_line(c.line_start)
+
+
+def test_consecutive_chunks_overlap_with_previous_tail(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    paragraphs = "\n\n".join(
+        f"Paragraph {i} has enough text in it to matter." for i in range(30)
+    )
+    md.write_text(f"# Title\n\n{paragraphs}\n")
+    doc = normalize(md)
+
+    chunks = chunk_document(doc, chunk_size=100, chunk_overlap=30)
+
+    assert len(chunks) >= 2
+    # With prefix-mode overlap, a prefix of chunks[1] is drawn from chunks[0]'s tail.
+    prefix = chunks[1].text[:40]
+    assert prefix in chunks[0].text, f"expected overlap not found; got prefix={prefix!r}"
