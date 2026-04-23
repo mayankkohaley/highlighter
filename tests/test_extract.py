@@ -41,6 +41,19 @@ def test_tracer_returns_one_verified_excerpt(tmp_path: Path) -> None:
     assert excerpts[0].text == "The quick brown fox jumps over the lazy dog."
 
 
+def test_empty_candidates_return_empty_list(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nIrrelevant body.\n")
+    doc = normalize(md)
+    chunk = chunk_document(doc)[0]
+
+    agent = build_extractor_agent()
+    with agent.override(model=_canned([])):
+        excerpts = extract_excerpts(chunk, Query(question="anything"), agent=agent)
+
+    assert excerpts == []
+
+
 def test_non_substring_candidates_are_dropped(tmp_path: Path) -> None:
     md = tmp_path / "doc.md"
     md.write_text("# Title\n\nThe quick brown fox jumps over the lazy dog.\n")
