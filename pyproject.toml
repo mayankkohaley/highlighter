@@ -1,0 +1,31 @@
+[project]
+name = "highlighter"
+version = "0.0.1"
+description = "Methodical verbatim excerpt extraction from documents (experiment)."
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["highlighter"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
