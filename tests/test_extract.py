@@ -39,3 +39,21 @@ def test_tracer_returns_one_verified_excerpt(tmp_path: Path) -> None:
 
     assert len(excerpts) == 1
     assert excerpts[0].text == "The quick brown fox jumps over the lazy dog."
+
+
+def test_non_substring_candidates_are_dropped(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nThe quick brown fox jumps over the lazy dog.\n")
+    doc = normalize(md)
+    chunk = chunk_document(doc)[0]
+
+    agent = build_extractor_agent()
+    candidates = [
+        RawExcerpt(text="The quick brown fox"),                     # substring → keep
+        RawExcerpt(text="An eagle soars above the mountain peak"),  # hallucination → drop
+    ]
+
+    with agent.override(model=_canned(candidates)):
+        excerpts = extract_excerpts(chunk, Query(question="anything"), agent=agent)
+
+    assert [e.text for e in excerpts] == ["The quick brown fox"]
