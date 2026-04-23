@@ -54,6 +54,28 @@ def test_empty_candidates_return_empty_list(tmp_path: Path) -> None:
     assert excerpts == []
 
 
+def test_excerpt_inherits_chunk_citation_metadata(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    md.write_text(
+        "# Top\n\n"
+        "## Subsection\n\n"
+        "The quick brown fox jumps over the lazy dog.\n"
+    )
+    doc = normalize(md)
+    chunk = chunk_document(doc)[0]
+
+    agent = build_extractor_agent()
+    candidates = [RawExcerpt(text="quick brown fox")]
+    with agent.override(model=_canned(candidates)):
+        excerpts = extract_excerpts(chunk, Query(question="?"), agent=agent)
+
+    assert len(excerpts) == 1
+    e = excerpts[0]
+    assert e.line_start == chunk.line_start
+    assert e.line_end == chunk.line_end
+    assert e.section_path == chunk.section_path
+
+
 def test_non_substring_candidates_are_dropped(tmp_path: Path) -> None:
     md = tmp_path / "doc.md"
     md.write_text("# Title\n\nThe quick brown fox jumps over the lazy dog.\n")

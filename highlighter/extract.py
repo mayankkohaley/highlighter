@@ -30,6 +30,9 @@ class _ExtractorOutput(BaseModel):
 class Excerpt(BaseModel):
     """Verified excerpt with citation metadata attached from the source chunk."""
     text: str
+    line_start: int
+    line_end: int
+    section_path: list[str]
 
 
 def build_extractor_agent(
@@ -58,7 +61,12 @@ def extract_excerpts(
     prompt = _build_prompt(chunk.text, query)
     result = agent.run_sync(prompt)
     return [
-        Excerpt(text=c.text)
+        Excerpt(
+            text=c.text,
+            line_start=chunk.line_start,
+            line_end=chunk.line_end,
+            section_path=chunk.section_path,
+        )
         for c in result.output.excerpts
         if c.text in chunk.text
     ]
