@@ -6,6 +6,8 @@ from pydantic import BaseModel
 
 from highlighter.normalize import NormalizedDoc
 
+_TOKENIZER = "cl100k_base"
+
 
 class Chunk(BaseModel):
     text: str
@@ -26,10 +28,10 @@ def chunk_document(
     chunk_overlap: int = 200,
 ) -> list[Chunk]:
     chunker = RecursiveChunker.from_recipe(
-        "markdown", lang="en", tokenizer="cl100k_base", chunk_size=chunk_size
+        "markdown", lang="en", tokenizer=_TOKENIZER, chunk_size=chunk_size
     )
     refinery = OverlapRefinery(
-        tokenizer="cl100k_base",
+        tokenizer=_TOKENIZER,
         context_size=chunk_overlap,
         mode="token",
         method="prefix",
