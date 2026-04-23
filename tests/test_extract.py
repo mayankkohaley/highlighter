@@ -1,8 +1,5 @@
 from pathlib import Path
 
-from pydantic_ai import ModelResponse, TextPart
-from pydantic_ai.models.function import FunctionModel
-
 from highlighter.chunk import chunk_document
 from highlighter.extract import (
     RawExcerpt,
@@ -12,15 +9,11 @@ from highlighter.extract import (
 )
 from highlighter.normalize import normalize
 from highlighter.query import Query
+from tests.llm_helpers import canned_function_model
 
 
-def _canned(candidates: list[RawExcerpt]) -> FunctionModel:
-    output = _ExtractorOutput(excerpts=candidates)
-
-    def fn(messages, info):
-        return ModelResponse(parts=[TextPart(content=output.model_dump_json())])
-
-    return FunctionModel(fn)
+def _canned(candidates: list[RawExcerpt]):
+    return canned_function_model(_ExtractorOutput(excerpts=candidates))
 
 
 def test_tracer_returns_one_verified_excerpt(tmp_path: Path) -> None:

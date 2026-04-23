@@ -1,14 +1,9 @@
-from pydantic_ai import ModelResponse, TextPart
-from pydantic_ai.models.function import FunctionModel
-
 from highlighter.expand import _QueryExpansion, build_query_agent, expand_query
+from tests.llm_helpers import canned_function_model
 
 
-def _canned(expansion: _QueryExpansion) -> FunctionModel:
-    def fn(messages, info):
-        return ModelResponse(parts=[TextPart(content=expansion.model_dump_json())])
-
-    return FunctionModel(fn)
+def _canned(expansion: _QueryExpansion):
+    return canned_function_model(expansion)
 
 
 def test_tracer_expands_a_raw_question_into_a_structured_query() -> None:
