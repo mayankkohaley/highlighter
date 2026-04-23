@@ -28,7 +28,7 @@ rather than retrieving one passage.
 1. **Query expansion** — turn the user's question into sub-questions,
    entities to watch for, and a relevance rubric.
 2. **Chunk** — split the normalized text into overlapping chunks that
-   prefer paragraph/heading boundaries.
+   prefer paragraph/heading boundaries. *(implemented)*
 3. **Per-chunk extraction** — for each chunk, ask an LLM to return verbatim
    spans relevant to the query. Verify each returned span actually appears
    in the chunk.
@@ -36,16 +36,48 @@ rather than retrieving one passage.
 5. **Synthesize** — final LLM call answers the question using only the
    consolidated excerpts, with citations.
 
-Only Stage 0 is implemented right now. Markdown input only — PDF support
-will slot in behind the same interface later.
+Markdown input only — PDF support will slot in behind the same interface
+later.
 
-## Stage 0 usage
+## Stage 0 — normalize
 
 ```
 python -m highlighter.normalize path/to/doc.md
 ```
 
 Prints the content hash and the parsed heading tree with line ranges.
+
+Programmatic:
+
+```python
+from highlighter.normalize import normalize
+
+doc = normalize("path/to/doc.md")
+doc.text                          # normalized markdown (LF, trimmed)
+doc.content_hash                  # sha256 of the original bytes
+doc.sections                      # list[Section] with (level, title, line_start, line_end)
+doc.section_path_for_line(42)     # heading hierarchy at a given 1-indexed line
+```
+
+## Stage 2 — chunk
+
+Wraps [Chonkie](https://docs.chonkie.ai)'s `RecursiveChunker` (markdown
+recipe) and `OverlapRefinery` to produce boundary-aware chunks with a
+configurable token overlap (tokenizer: `cl100k_base`).
+
+```python
+from highlighter.normalize import normalize
+from highlighter.chunk import chunk_document
+
+doc = normalize("path/to/doc.md")
+chunks = chunk_document(doc, chunk_size=2000, chunk_overlap=200)
+
+for c in chunks:
+    c.text            # chunk text, including prepended overlap from the prior chunk
+    c.line_start      # 1-indexed start line in doc.text
+    c.line_end        # 1-indexed end line, inclusive
+    c.section_path    # heading hierarchy at line_start
+```
 
 ## Development
 
