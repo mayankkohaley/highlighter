@@ -26,3 +26,15 @@ def test_tracer_expands_a_raw_question_into_a_structured_query() -> None:
         "What IAM permissions?",
     ]
     assert query.rubric == "Useful excerpts name specific software, permissions, or accounts."
+
+
+def test_input_question_passes_through_verbatim() -> None:
+    agent = build_query_agent()
+    # Canned expansion deliberately contains no trace of the input question;
+    # expand_query must preserve the raw input in Query.question regardless.
+    canned = _QueryExpansion(sub_questions=[], rubric="")
+
+    with agent.override(model=_canned(canned)):
+        query = expand_query("  What specifically counts as 'deploy-ready'?  ", agent=agent)
+
+    assert query.question == "  What specifically counts as 'deploy-ready'?  "
