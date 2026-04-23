@@ -9,6 +9,7 @@ dependencies = [
     "tiktoken>=0.7",
     "huggingface-hub>=0.24",
     "jsonschema>=4",
+    "pydantic-ai>=0.0.14",
 ]
 
 [dependency-groups]
