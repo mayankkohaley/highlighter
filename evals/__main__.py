@@ -18,7 +18,7 @@ from evals.runner import CaseResult, run_case
 from highlighter.extract import _ExtractorOutput
 
 
-def _format_case_single(result: CaseResult) -> str:
+def _format_case_single(result: CaseResult, debug: bool = False) -> str:
     lines: list[str] = []
     s = result.score
     lines.append(result.case.name)
@@ -35,6 +35,14 @@ def _format_case_single(result: CaseResult) -> str:
         lines.append(f"  predicted excerpts ({len(result.predicted)}):")
         for text in result.predicted:
             lines.append(f"    > {text}")
+    if debug:
+        lines.append("  --- debug ---")
+        lines.append(f"  raw candidates ({len(result.raw_candidates)}):")
+        for text in result.raw_candidates:
+            lines.append(f"    > {text}")
+        lines.append("  prompt:")
+        for line in result.prompt.splitlines():
+            lines.append(f"    | {line}")
     return "\n".join(lines)
 
 
@@ -104,6 +112,11 @@ def _main(
         default=1,
         help="Re-run each case N times and report min/max/mean F1.",
     )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Also print the prompt and raw model output for each case.",
+    )
     args = parser.parse_args(argv[1:])
 
     cases = _load_cases(Path(args.cases_dir), args.case)
@@ -115,7 +128,7 @@ def _main(
         ]
         runs_per_case.append(runs)
         if args.runs == 1:
-            print(_format_case_single(runs[0]))
+            print(_format_case_single(runs[0], debug=args.debug))
         else:
             print(_format_case_multi(runs))
         print()

@@ -60,16 +60,23 @@ def _build_prompt(chunk_text: str, query: Query) -> str:
     return "\n\n".join(parts)
 
 
-def extract_excerpts(
+class ExtractResult(BaseModel):
+    """Full output of one extraction call — the prompt sent, raw candidates, verified excerpts."""
+    prompt: str
+    raw_candidates: list[RawExcerpt]
+    verified: list[Excerpt]
+
+
+def extract_excerpts_verbose(
     chunk: Chunk,
     query: Query,
     *,
     agent: Agent[None, _ExtractorOutput] | None = None,
-) -> list[Excerpt]:
+) -> ExtractResult:
     agent = agent or build_extractor_agent()
     prompt = _build_prompt(chunk.text, query)
-    result = agent.run_sync(prompt)
-    return [
+    raw = agent.run_sync(prompt).output.excerpts
+    verified = [
         Excerpt(
             text=c.text,
             which_subquestion=c.which_subquestion,
@@ -78,6 +85,16 @@ def extract_excerpts(
             line_end=chunk.line_end,
             section_path=chunk.section_path,
         )
-        for c in result.output.excerpts
+        for c in raw
         if c.text in chunk.text
     ]
+    return ExtractResult(prompt=prompt, raw_candidates=raw, verified=verified)
+
+
+def extract_excerpts(
+    chunk: Chunk,
+    query: Query,
+    *,
+    agent: Agent[None, _ExtractorOutput] | None = None,
+) -> list[Excerpt]:
+    return extract_excerpts_verbose(chunk, query, agent=agent).verified

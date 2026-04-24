@@ -96,6 +96,60 @@ def test_cli_report_includes_predicted_excerpt_text(
     assert "The sky is blue" in out
 
 
+def test_cli_debug_flag_prints_prompt_and_raw_candidates(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs = tmp_path / "docs"
+    cases = tmp_path / "cases"
+    docs.mkdir()
+    cases.mkdir()
+    (docs / "doc.md").write_text(
+        "# Top\n\n## P\n\nNode.js 20 or later is required.\n"
+    )
+    (cases / "p.yaml").write_text(
+        "document: doc.md\n"
+        "cases:\n"
+        "  - name: p\n"
+        "    chunk_selector:\n"
+        '      section_path: ["Top", "P"]\n'
+        "    query:\n"
+        "      question: What is required?\n"
+        "    expected_excerpts:\n"
+        '      - "Node.js 20 or later"\n'
+    )
+
+    from evals.__main__ import _main
+
+    agent = build_extractor_agent()
+    # One candidate survives substring verification, one is a hallucination that gets dropped.
+    extraction = _ExtractorOutput(
+        excerpts=[
+            RawExcerpt(text="Node.js 20 or later"),
+            RawExcerpt(text="DROPPED_HALLUCINATION not in chunk"),
+        ]
+    )
+
+    with agent.override(model=canned_function_model(extraction)):
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--debug",
+            ],
+            extract_agent=agent,
+        )
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    # Prompt text visible (for diagnosing zero-prediction mode).
+    assert "What is required?" in out
+    # Both the verified excerpt AND the dropped raw candidate are visible.
+    assert "Node.js 20 or later" in out
+    assert "DROPPED_HALLUCINATION not in chunk" in out
+
+
 def test_cli_runs_flag_reruns_each_case_and_reports_f1_range(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
