@@ -32,7 +32,7 @@ class PipelineResult(BaseModel):
     synthesis: Synthesis | None = None
 
 
-_CONCURRENCY_CEILING = 8
+_CONCURRENCY_CEILING = 32
 
 
 async def _extract_all(
