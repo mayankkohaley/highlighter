@@ -78,10 +78,22 @@ Baselines live in `evals/baseline.json` (chunk-level, tolerance `0.02`)
 and `evals/baseline-pipeline.json` (pipeline, tolerance `0.05` — wider
 because generation variance stacks on top of extraction).
 
+## Testing
+
+```
+uv run pytest                             # full suite
+uv run pytest tests/test_consolidate.py   # single file
+uv run pytest -k synthesize               # filter by keyword
+```
+
+LLM-driven tests stub the pydantic-ai agent with a `FunctionModel` via
+`agent.override(...)`, so the suite runs offline — no API key required.
+Internal logic (verification, citation mapping, consolidation) is never
+stubbed.
+
 ## Development
 
 ```
 uv sync
-uv run pytest
 uv run ruff check .
 ```
