@@ -45,6 +45,39 @@ Requires an API key for the configured provider (default:
 `anthropic:claude-haiku-4-5-20251001`, so `ANTHROPIC_API_KEY` must be
 set).
 
+## Evals
+
+Two tracks measure extraction quality. Both report precision / recall / F1
+via substring match against fixture-provided `expected_excerpts`, and both
+support a baseline + regression gate.
+
+- **Chunk-level** — pins one chunk per case and measures the extractor in
+  isolation, bypassing query expansion and chunk selection.
+- **Pipeline** — runs the full pipeline end-to-end against a whole
+  document, so generated sub-questions and rubric are part of the score.
+
+```
+# Chunk-level
+uv run python -m evals                    # all cases, one run each
+uv run python -m evals --case <name>      # single case by name
+uv run python -m evals --runs 3           # repeat each N times
+uv run python -m evals --debug            # also print prompt + raw LLM output
+uv run python -m evals --write-baseline   # record current mean scores
+uv run python -m evals --check-baseline   # gate: exit non-zero on regression
+
+# Pipeline
+uv run python -m evals.pipeline                 # all cases, one run each
+uv run python -m evals.pipeline --case <name>
+uv run python -m evals.pipeline --runs 3
+uv run python -m evals.pipeline --debug         # also print generated sub-Qs + rubric
+uv run python -m evals.pipeline --write-baseline
+uv run python -m evals.pipeline --check-baseline
+```
+
+Baselines live in `evals/baseline.json` (chunk-level, tolerance `0.02`)
+and `evals/baseline-pipeline.json` (pipeline, tolerance `0.05` — wider
+because generation variance stacks on top of extraction).
+
 ## Development
 
 ```
