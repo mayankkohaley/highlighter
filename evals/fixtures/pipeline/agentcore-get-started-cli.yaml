@@ -1,0 +1,14 @@
+# Pipeline-level eval for the AgentCore get-started CLI doc.
+# Exercises Stage 0→3 end-to-end against the whole document.
+
+document: agentcore-get-started-cli.md
+
+cases:
+  - name: agentcore-prerequisites
+    question: What are the prerequisites for deploying an AgentCore agent?
+    expected_excerpts:
+      - "Node.js 20 or later"
+      - "npm"
+      - "AWS account with credentials configured"
+      - "Your identity needs permissions to make AgentCore API calls"
+      - "IAM permissions"
