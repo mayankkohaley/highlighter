@@ -45,3 +45,41 @@ def test_tracer_runs_full_pipeline(tmp_path: Path) -> None:
     assert result.query.sub_questions == ["What animal is described?"]
     assert len(result.excerpts) == 1
     assert result.excerpts[0].text == "quick brown fox"
+
+
+def test_excerpts_aggregate_across_all_chunks(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    body = "\n\n".join(f"Filler paragraph {i}." for i in range(40))
+    md.write_text(
+        "# Title\n\n"
+        "MARKER_ALPHA appears early.\n\n"
+        f"{body}\n\n"
+        "MARKER_BETA appears late.\n"
+    )
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    extraction = _ExtractorOutput(
+        excerpts=[
+            RawExcerpt(text="MARKER_ALPHA appears early."),
+            RawExcerpt(text="MARKER_BETA appears late."),
+        ]
+    )
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        result = run_pipeline(
+            md,
+            question="?",
+            chunk_size=80,
+            chunk_overlap=10,
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    texts = {e.text for e in result.excerpts}
+    assert "MARKER_ALPHA appears early." in texts
+    assert "MARKER_BETA appears late." in texts
