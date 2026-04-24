@@ -5,8 +5,8 @@ Guidance for any agent (Claude, Codex, humans, etc.) working in this repo.
 ## Project
 
 `highlighter` is an experiment. See [README.md](README.md) for the rationale
-and pipeline sketch. Stages 0 (normalize), 1 (expand), 2 (chunk), and 3
-(extract) are implemented. Stages 4 (consolidate) and 5 (synthesize) TBD.
+and usage. All six pipeline stages — normalize, expand, chunk, extract,
+consolidate, synthesize — are implemented.
 
 ## Setup
 
