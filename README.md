@@ -41,8 +41,51 @@ later.
 
 ## Command-line usage
 
-Only Stage 0 currently has a CLI. Stages 1, 2, and 3 are Python-only;
-they'll grow entry points as the pipeline comes together.
+### `highlighter` — ask a question, get cited excerpts
+
+Runs the full pipeline (normalize → expand → chunk → extract) against a
+markdown file and prints the question, LLM-generated sub-questions and
+rubric, and each verified verbatim excerpt with its citation.
+
+```
+uv run python -m highlighter <markdown-file> -q "your question"
+```
+
+| Arg / flag          | Required | Default                               | Notes                                          |
+| ------------------- | -------- | ------------------------------------- | ---------------------------------------------- |
+| `<markdown-file>`   | yes      | —                                     | Positional. Path to a markdown document.       |
+| `-q`, `--question`  | yes      | —                                     | The question to ask.                           |
+| `--chunk-size`      | no       | `2000`                                | Tokens per chunk.                              |
+| `--chunk-overlap`   | no       | `200`                                 | Token overlap between consecutive chunks.      |
+
+Requires an API key for the configured provider (default:
+`anthropic:claude-haiku-4-5-20251001`, so `ANTHROPIC_API_KEY` must be
+set).
+
+Example:
+
+```
+$ uv run python -m highlighter tmp/agentcore-get-started-cli.md \
+    -q "What are the prerequisites for deploying an agent?"
+
+Question: What are the prerequisites for deploying an agent?
+
+Sub-questions:
+  - Which AWS services are required?
+  - What IAM permissions does the user need?
+  - Which language runtimes must be installed?
+
+Rubric: Useful excerpts name specific software, permissions, accounts, or versions required.
+
+Excerpts (3):
+
+[1] L14-L21  Get started with Amazon Bedrock AgentCore > Prerequisites
+    sub-q: Which language runtimes must be installed?   confidence: 0.95
+    > Node.js 20 or later. The AgentCore CLI is distributed as an npm package.
+...
+```
+
+Exit codes: `0` on success; `2` on a usage error (missing required argument).
 
 ### `highlighter.normalize`
 
