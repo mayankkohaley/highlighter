@@ -47,3 +47,15 @@ def test_empty_predicted_and_empty_expected_is_perfect() -> None:
     assert result.precision == 1.0
     assert result.recall == 1.0
     assert result.f1 == 1.0
+
+
+def test_score_tolerates_markdown_emphasis_markers() -> None:
+    # A predicted span that embeds emphasis markers inside what would otherwise
+    # be the expected phrase must still be credited as a match.
+    result = score_case(
+        predicted=["the *Tsesarevich* were put out of action for weeks"],
+        expected=["Tsesarevich were put out of action"],
+    )
+
+    assert result.precision == 1.0
+    assert result.recall == 1.0
