@@ -8,7 +8,12 @@ from pydantic_ai import Agent
 
 from highlighter.chunk import chunk_document
 from highlighter.expand import _QueryExpansion, expand_query
-from highlighter.extract import Excerpt, _ExtractorOutput, extract_excerpts
+from highlighter.extract import (
+    Excerpt,
+    RawExcerpt,
+    _ExtractorOutput,
+    extract_excerpts_verbose,
+)
 from highlighter.normalize import normalize
 from highlighter.query import Query
 
@@ -16,6 +21,7 @@ from highlighter.query import Query
 class PipelineResult(BaseModel):
     query: Query
     excerpts: list[Excerpt]
+    raw_candidates: list[RawExcerpt] = []
 
 
 def run_pipeline(
@@ -31,6 +37,9 @@ def run_pipeline(
     query = expand_query(question, agent=expand_agent)
     chunks = chunk_document(doc, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     excerpts: list[Excerpt] = []
+    raw_candidates: list[RawExcerpt] = []
     for chunk in chunks:
-        excerpts.extend(extract_excerpts(chunk, query, doc, agent=extract_agent))
-    return PipelineResult(query=query, excerpts=excerpts)
+        er = extract_excerpts_verbose(chunk, query, doc, agent=extract_agent)
+        excerpts.extend(er.verified)
+        raw_candidates.extend(er.raw_candidates)
+    return PipelineResult(query=query, excerpts=excerpts, raw_candidates=raw_candidates)

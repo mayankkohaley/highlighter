@@ -83,3 +83,39 @@ def test_excerpts_aggregate_across_all_chunks(tmp_path: Path) -> None:
     texts = {e.text for e in result.excerpts}
     assert "MARKER_ALPHA appears early." in texts
     assert "MARKER_BETA appears late." in texts
+
+
+def test_pipeline_result_carries_raw_candidates_including_dropped(tmp_path: Path) -> None:
+    # Diagnosing the extractor requires seeing every span the model returned,
+    # including ones that failed substring verification. The pipeline result
+    # must surface those pre-verification candidates.
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nThe quick brown fox.\n")
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    # One span that will verify; one that won't.
+    extraction = _ExtractorOutput(
+        excerpts=[
+            RawExcerpt(text="quick brown fox"),
+            RawExcerpt(text="HALLUCINATED phrase not in doc"),
+        ]
+    )
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        result = run_pipeline(
+            md,
+            question="?",
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    raw_texts = [c.text for c in result.raw_candidates]
+    assert "quick brown fox" in raw_texts
+    assert "HALLUCINATED phrase not in doc" in raw_texts
+    # Verification still drops the hallucination from excerpts.
+    assert [e.text for e in result.excerpts] == ["quick brown fox"]
