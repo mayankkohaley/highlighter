@@ -4,7 +4,7 @@ import pytest
 
 from highlighter.expand import _QueryExpansion, build_query_agent
 from highlighter.extract import RawExcerpt, _ExtractorOutput, build_extractor_agent
-from tests.llm_helpers import canned_function_model
+from tests.llm_helpers import canned_function_model, varying_function_model
 
 
 def _tiny_suite(tmp_path: Path) -> tuple[Path, Path]:
@@ -103,3 +103,43 @@ def test_cli_debug_prints_generated_subquestions_and_rubric(
     assert rc == 0
     assert "SUB_Q_PROBE" in out
     assert "RUBRIC_PROBE" in out
+
+
+def test_cli_runs_flag_reruns_each_case_and_reports_f1_range(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs, cases = _tiny_suite(tmp_path)
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    # Alternate between matching extract (F1=1) and empty (F1=0) across 3 runs.
+    extractions = [
+        _ExtractorOutput(excerpts=[RawExcerpt(text="Node.js 20 or later")]),
+        _ExtractorOutput(excerpts=[]),
+        _ExtractorOutput(excerpts=[RawExcerpt(text="Node.js 20 or later")]),
+    ]
+
+    from evals.pipeline.__main__ import _main
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=varying_function_model(extractions)),
+    ):
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--runs", "3",
+            ],
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "min=0.00" in out
+    assert "max=1.00" in out
+    assert "3 runs" in out
