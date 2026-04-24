@@ -22,6 +22,28 @@ def test_extractor_agent_pins_temperature_to_zero_for_determinism() -> None:
     assert agent.model_settings.get("temperature") == 0.0
 
 
+def test_verification_tolerates_stripped_markdown_emphasis(tmp_path: Path) -> None:
+    # The chunk wraps "Python 3.10 or later" in bold asterisks.
+    md = tmp_path / "doc.md"
+    md.write_text(
+        "# X\n\n"
+        "+  **Python 3.10 or later** (for agent code).\n"
+    )
+    doc = normalize(md)
+    chunks = chunk_document(doc)
+    chunk = chunks[0]
+
+    agent = build_extractor_agent()
+    # Model returned the same span without the asterisks — should still verify.
+    candidates = [RawExcerpt(text="Python 3.10 or later (for agent code)")]
+
+    with agent.override(model=_canned(candidates)):
+        excerpts = extract_excerpts(chunk, Query(question="?"), agent=agent)
+
+    assert len(excerpts) == 1
+    assert excerpts[0].text == "Python 3.10 or later (for agent code)"
+
+
 def test_tracer_returns_one_verified_excerpt(tmp_path: Path) -> None:
     md = tmp_path / "doc.md"
     md.write_text("# Title\n\nThe quick brown fox jumps over the lazy dog.\n")
