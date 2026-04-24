@@ -93,6 +93,17 @@ def test_save_and_load_roundtrip(tmp_path: Path) -> None:
     assert path.read_text().startswith("{")
 
 
+def test_case_baseline_rounds_metrics_to_three_decimals() -> None:
+    # Keeps the serialized baseline.json human-readable instead of e.g.
+    # "precision": 0.6666666666666666. Applied at the model boundary so
+    # every Baseline (aggregated or hand-loaded) holds the same precision.
+    cb = CaseBaseline(precision=0.6666666666, recall=0.923076923, f1=0.7857142857)
+
+    assert cb.precision == 0.667
+    assert cb.recall == 0.923
+    assert cb.f1 == 0.786
+
+
 def test_aggregate_computes_mean_metrics_per_case_across_runs() -> None:
     runs_per_case = [
         [

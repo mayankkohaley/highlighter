@@ -3,15 +3,22 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 from evals.runner import CaseResult
+
+_SCORE_DECIMALS = 3
 
 
 class CaseBaseline(BaseModel):
     precision: float
     recall: float
     f1: float
+
+    @field_validator("precision", "recall", "f1")
+    @classmethod
+    def _round(cls, v: float) -> float:
+        return round(v, _SCORE_DECIMALS)
 
 
 class Baseline(BaseModel):
