@@ -65,7 +65,7 @@ set).
 Example:
 
 ```
-$ uv run python -m highlighter tmp/agentcore-get-started-cli.md \
+$ uv run python -m highlighter evals/fixtures/docs/agentcore-get-started-cli.md \
     -q "What are the prerequisites for deploying an agent?"
 
 Question: What are the prerequisites for deploying an agent?
@@ -109,8 +109,8 @@ parses the heading hierarchy, and prints:
 Example:
 
 ```
-$ uv run python -m highlighter.normalize tmp/agentcore-get-started-cli.md
-source:  tmp/agentcore-get-started-cli.md
+$ uv run python -m highlighter.normalize evals/fixtures/docs/agentcore-get-started-cli.md
+source:  evals/fixtures/docs/agentcore-get-started-cli.md
 sha256:  ceed3dcc0035ab6da706681e91d3b5201b74194366d7b7b114752f0f043a80b6
 sections: 13
 
