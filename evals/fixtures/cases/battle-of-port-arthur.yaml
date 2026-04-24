@@ -1,0 +1,28 @@
+# Stage 3 eval cases for the Battle of Port Arthur Wikipedia article.
+# Dimension: narrative prose with named entities — tests extracting specific
+# ships/units named across a flowing historical account.
+
+document: battle-of-port-arthur.md
+
+cases:
+
+  - name: port-arthur-russian-ships-damaged
+    chunk_selector:
+      section_path:
+        - "Battle of Port Arthur"
+        - "Battle"
+        - "Night attack of 8–9 February 1904"
+    query:
+      question: Which Russian ships were damaged or put out of action in the Japanese night torpedo attack?
+      sub_questions:
+        - Which Russian battleships were hit?
+        - Which Russian cruisers were hit?
+      rubric: >
+        Useful excerpts name a specific Russian ship that was hit, damaged,
+        or put out of action during the night attack of 8–9 February 1904.
+        Do not include Japanese ships, descriptions of tactics, or outcomes
+        unrelated to specific Russian vessels.
+    expected_excerpts:
+      - "Pallada"
+      - "Retvizan"
+      - "Tsesarevich were put out of action"
