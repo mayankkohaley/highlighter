@@ -47,6 +47,44 @@ def test_cli_prints_question_sub_questions_and_excerpts(
     assert "quick brown fox" in out
 
 
+def test_cli_prints_consolidated_excerpts_not_raw(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The CLI is the user-facing surface — it should render the consolidated
+    # excerpt list, not the raw verified list. Two adjacent spans collapse to
+    # one block spanning both lines.
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nalpha line\nbeta line\n")
+
+    from highlighter.__main__ import _main
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    extraction = _ExtractorOutput(
+        excerpts=[
+            RawExcerpt(text="alpha line"),
+            RawExcerpt(text="beta line"),
+        ]
+    )
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        rc = _main(
+            ["prog", str(md), "-q", "?"],
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "Excerpts (1)" in out
+    assert "L3-L4" in out
+
+
 def test_cli_missing_question_exits_with_error(tmp_path: Path) -> None:
     md = tmp_path / "doc.md"
     md.write_text("irrelevant\n")

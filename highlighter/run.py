@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from pydantic_ai import Agent
 
 from highlighter.chunk import chunk_document
+from highlighter.consolidate import consolidate
 from highlighter.expand import _QueryExpansion, expand_query
 from highlighter.extract import (
     Excerpt,
@@ -21,6 +22,7 @@ from highlighter.query import Query
 class PipelineResult(BaseModel):
     query: Query
     excerpts: list[Excerpt]
+    consolidated: list[Excerpt] = []
     raw_candidates: list[RawExcerpt] = []
 
 
@@ -42,4 +44,9 @@ def run_pipeline(
         er = extract_excerpts_verbose(chunk, query, doc, agent=extract_agent)
         excerpts.extend(er.verified)
         raw_candidates.extend(er.raw_candidates)
-    return PipelineResult(query=query, excerpts=excerpts, raw_candidates=raw_candidates)
+    return PipelineResult(
+        query=query,
+        excerpts=excerpts,
+        consolidated=consolidate(excerpts, doc),
+        raw_candidates=raw_candidates,
+    )

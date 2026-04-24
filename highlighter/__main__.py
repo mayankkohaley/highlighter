@@ -68,7 +68,7 @@ def _main(
         expand_agent=expand_agent,
         extract_agent=extract_agent,
     )
-    print(_format_result(result.query, result.excerpts))
+    print(_format_result(result.query, result.consolidated))
     return 0
 
 

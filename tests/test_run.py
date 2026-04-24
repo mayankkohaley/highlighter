@@ -119,3 +119,38 @@ def test_pipeline_result_carries_raw_candidates_including_dropped(tmp_path: Path
     assert "HALLUCINATED phrase not in doc" in raw_texts
     # Verification still drops the hallucination from excerpts.
     assert [e.text for e in result.excerpts] == ["quick brown fox"]
+
+
+def test_pipeline_consolidates_adjacent_verified_excerpts(tmp_path: Path) -> None:
+    # Stage 4 runs inside the pipeline: two adjacent excerpts in the same
+    # section collapse to one consolidated span. The raw verified list is
+    # preserved for downstream inspection.
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nalpha line\nbeta line\n")
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    extraction = _ExtractorOutput(
+        excerpts=[
+            RawExcerpt(text="alpha line"),
+            RawExcerpt(text="beta line"),
+        ]
+    )
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        result = run_pipeline(
+            md,
+            question="?",
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    assert len(result.excerpts) == 2
+    assert len(result.consolidated) == 1
+    assert result.consolidated[0].text == "alpha line\nbeta line"
+    assert result.consolidated[0].line_start == 3
+    assert result.consolidated[0].line_end == 4
