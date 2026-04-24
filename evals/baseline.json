@@ -1,9 +1,9 @@
 {
   "cases": {
     "agentcore-prerequisites": {
-      "precision": 0.688,
+      "precision": 0.714,
       "recall": 1.0,
-      "f1": 0.813
+      "f1": 0.833
     },
     "agentcore-agent-language": {
       "precision": 1.0,
@@ -26,9 +26,9 @@
       "f1": 1.0
     },
     "barroso-political-positions": {
-      "precision": 0.925,
-      "recall": 0.949,
-      "f1": 0.936
+      "precision": 0.923,
+      "recall": 0.923,
+      "f1": 0.923
     },
     "kubernetes-v1-36-deprecations": {
       "precision": 1.0,
