@@ -10,7 +10,7 @@ from pydantic_ai import Agent
 
 from highlighter.chunk import Chunk, chunk_document
 from highlighter.consolidate import consolidate
-from highlighter.expand import _QueryExpansion, expand_query
+from highlighter.expand import _QueryExpansion, expand_query_async
 from highlighter.extract import (
     Excerpt,
     ExtractResult,
@@ -69,6 +69,25 @@ async def _extract_all(
     return results
 
 
+async def _expand_and_extract(
+    doc: NormalizedDoc,
+    question: str,
+    *,
+    chunk_size: int,
+    chunk_overlap: int,
+    expand_agent: Agent[None, _QueryExpansion] | None,
+    extract_agent: Agent[None, _ExtractorOutput] | None,
+) -> tuple[Query, list[ExtractResult]]:
+    # Expand and chunk are independent — overlap them so expand_query's network
+    # latency hides behind the local chunking work instead of sitting on the
+    # critical path.
+    expand_task = asyncio.create_task(expand_query_async(question, agent=expand_agent))
+    chunks = chunk_document(doc, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
+    query = await expand_task
+    results = await _extract_all(chunks, query, doc, extract_agent)
+    return query, results
+
+
 def run_pipeline(
     doc_path: str | Path,
     question: str,
@@ -81,9 +100,16 @@ def run_pipeline(
     synthesis_agent: Agent[None, Synthesis] | None = None,
 ) -> PipelineResult:
     doc = normalize(doc_path)
-    query = expand_query(question, agent=expand_agent)
-    chunks = chunk_document(doc, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
-    results = asyncio.run(_extract_all(chunks, query, doc, extract_agent))
+    query, results = asyncio.run(
+        _expand_and_extract(
+            doc,
+            question,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+    )
     excerpts: list[Excerpt] = []
     raw_candidates: list[RawExcerpt] = []
     for er in results:

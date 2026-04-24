@@ -46,3 +46,17 @@ def expand_query(
         sub_questions=expansion.sub_questions,
         rubric=expansion.rubric,
     )
+
+
+async def expand_query_async(
+    question: str,
+    *,
+    agent: Agent[None, _QueryExpansion] | None = None,
+) -> Query:
+    agent = agent or build_query_agent()
+    expansion = (await agent.run(question)).output
+    return Query(
+        question=question,
+        sub_questions=expansion.sub_questions,
+        rubric=expansion.rubric,
+    )

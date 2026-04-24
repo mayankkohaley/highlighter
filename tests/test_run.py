@@ -2,6 +2,7 @@ import asyncio
 import time
 from pathlib import Path
 
+import pytest
 from pydantic_ai import ModelResponse, TextPart
 from pydantic_ai.models.function import FunctionModel
 
@@ -386,6 +387,60 @@ def test_per_chunk_exception_does_not_kill_pipeline(tmp_path: Path) -> None:
     assert "MARKER_A appears early." in texts
     assert "MARKER_C near the end." in texts
     assert "MARKER_B in the middle." not in texts
+
+
+def test_expand_runs_concurrently_with_chunking(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Expand and chunk are independent — overlapping them removes expand's
+    # latency from the critical path. With expand stubbed to await 0.3s and
+    # chunk being CPU work that completes in milliseconds, chunk_document
+    # must finish well before expand_query when the two run concurrently.
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nbody.\n")
+
+    expand_finished_at: list[float] = []
+    chunk_finished_at: list[float] = []
+
+    expansion_payload = _QueryExpansion(sub_questions=[], rubric="").model_dump_json()
+
+    async def slow_expand_fn(messages, info):
+        await asyncio.sleep(0.3)
+        expand_finished_at.append(time.perf_counter())
+        return ModelResponse(parts=[TextPart(content=expansion_payload)])
+
+    import highlighter.run as run_mod
+
+    original_chunk = run_mod.chunk_document
+
+    def tracking_chunk(*args, **kwargs):
+        result = original_chunk(*args, **kwargs)
+        chunk_finished_at.append(time.perf_counter())
+        return result
+
+    monkeypatch.setattr(run_mod, "chunk_document", tracking_chunk)
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    extraction = _ExtractorOutput(excerpts=[])
+
+    with (
+        expand_agent.override(model=FunctionModel(slow_expand_fn)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        run_pipeline(
+            md,
+            question="?",
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    assert chunk_finished_at and expand_finished_at
+    assert chunk_finished_at[0] < expand_finished_at[0], (
+        "chunking should overlap with in-flight expand_query; "
+        f"chunk_done={chunk_finished_at[0]:.3f} expand_done={expand_finished_at[0]:.3f}"
+    )
 
 
 def test_concurrent_extraction_respects_ceiling(tmp_path: Path) -> None:
