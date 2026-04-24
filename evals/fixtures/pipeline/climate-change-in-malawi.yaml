@@ -1,0 +1,16 @@
+# Pipeline-level eval for the Climate Change in Malawi article.
+# Exercises Stage 0→3 end-to-end: Stage 1 generates sub-questions and rubric
+# from the raw question; Stage 3 runs across every chunk; expected_excerpts
+# is the union of what a good pipeline should surface across the whole doc.
+
+document: climate-change-in-malawi.md
+
+cases:
+  - name: malawi-economic-impact
+    question: what was the economic impact of climate change?
+    expected_excerpts:
+      - "diminish Malawi's GDP by 3 to 9 percent by 2030"
+      - "variability in crop yields, impacting agricultural productivity"
+      - "flooding poses a significant threat to the road infrastructure"
+      - "2,596 individuals lost their lives due to natural disasters"
+      - "Malawi's economy emitted approximately three times more GHGs relative to GDP"
