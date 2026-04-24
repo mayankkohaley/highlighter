@@ -14,6 +14,35 @@ import re
 _EMPHASIS_MARKERS = re.compile(r"[*_`]")
 
 
+def _strip(text: str) -> str:
+    return _EMPHASIS_MARKERS.sub("", text)
+
+
+def find_span(haystack: str, needle: str) -> tuple[int, int] | None:
+    r"""Locate `needle` inside `haystack` after stripping `* _ \``.
+
+    Returns `(start, end)` character offsets into the ORIGINAL `haystack`
+    (so callers can map back to lines), or None if not found.
+    """
+    stripped_needle = _strip(needle)
+    if not stripped_needle:
+        return None
+    mapping: list[int] = []
+    kept: list[str] = []
+    for i, ch in enumerate(haystack):
+        if ch in "*_`":
+            continue
+        kept.append(ch)
+        mapping.append(i)
+    stripped_haystack = "".join(kept)
+    idx = stripped_haystack.find(stripped_needle)
+    if idx == -1:
+        return None
+    start = mapping[idx]
+    end = mapping[idx + len(stripped_needle) - 1] + 1
+    return start, end
+
+
 def contains(haystack: str, needle: str) -> bool:
-    """True if `needle` appears in `haystack` after stripping `* _ \``."""
-    return _EMPHASIS_MARKERS.sub("", needle) in _EMPHASIS_MARKERS.sub("", haystack)
+    r"""True if `needle` appears in `haystack` after stripping `* _ \``."""
+    return find_span(haystack, needle) is not None

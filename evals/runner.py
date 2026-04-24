@@ -32,7 +32,7 @@ def run_case(
 ) -> CaseResult:
     doc = normalize(Path(docs_dir) / case.document)
     chunk = select_chunk(doc, case.chunk_selector)
-    er = extract_excerpts_verbose(chunk, case.query, agent=extract_agent)
+    er = extract_excerpts_verbose(chunk, case.query, doc, agent=extract_agent)
     predicted = [e.text for e in er.verified]
     score = score_case(predicted=predicted, expected=case.expected_excerpts)
     matched = [e for e in case.expected_excerpts if any(contains(p, e) for p in predicted)]

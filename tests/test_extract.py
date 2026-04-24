@@ -38,7 +38,7 @@ def test_verification_tolerates_stripped_markdown_emphasis(tmp_path: Path) -> No
     candidates = [RawExcerpt(text="Python 3.10 or later (for agent code)")]
 
     with agent.override(model=_canned(candidates)):
-        excerpts = extract_excerpts(chunk, Query(question="?"), agent=agent)
+        excerpts = extract_excerpts(chunk, Query(question="?"), doc, agent=agent)
 
     assert len(excerpts) == 1
     assert excerpts[0].text == "Python 3.10 or later (for agent code)"
@@ -56,7 +56,7 @@ def test_tracer_returns_one_verified_excerpt(tmp_path: Path) -> None:
     candidates = [RawExcerpt(text="The quick brown fox jumps over the lazy dog.")]
 
     with agent.override(model=_canned(candidates)):
-        excerpts = extract_excerpts(chunk, query, agent=agent)
+        excerpts = extract_excerpts(chunk, query, doc, agent=agent)
 
     assert len(excerpts) == 1
     assert excerpts[0].text == "The quick brown fox jumps over the lazy dog."
@@ -70,31 +70,43 @@ def test_empty_candidates_return_empty_list(tmp_path: Path) -> None:
 
     agent = build_extractor_agent()
     with agent.override(model=_canned([])):
-        excerpts = extract_excerpts(chunk, Query(question="anything"), agent=agent)
+        excerpts = extract_excerpts(chunk, Query(question="anything"), doc, agent=agent)
 
     assert excerpts == []
 
 
-def test_excerpt_inherits_chunk_citation_metadata(tmp_path: Path) -> None:
+def test_excerpt_citation_reflects_its_span_inside_the_chunk(tmp_path: Path) -> None:
+    # The chunk spans two sibling sections. A candidate pulled from the SECOND
+    # section must be cited as belonging to that section — not to the chunk's
+    # starting section (which is what a naive inherit-from-chunk would give).
     md = tmp_path / "doc.md"
     md.write_text(
-        "# Top\n\n"
-        "## Subsection\n\n"
-        "The quick brown fox jumps over the lazy dog.\n"
+        "# Top\n"
+        "\n"
+        "## First\n"
+        "\n"
+        "alpha line.\n"
+        "\n"
+        "## Second\n"
+        "\n"
+        "beta line here.\n"
     )
     doc = normalize(md)
-    chunk = chunk_document(doc)[0]
+    chunks = chunk_document(doc)
+    assert len(chunks) == 1  # tracer requires a single chunk covering both sections
+    chunk = chunks[0]
+    assert chunk.section_path == ["Top"]
 
     agent = build_extractor_agent()
-    candidates = [RawExcerpt(text="quick brown fox")]
+    candidates = [RawExcerpt(text="beta line here.")]
     with agent.override(model=_canned(candidates)):
-        excerpts = extract_excerpts(chunk, Query(question="?"), agent=agent)
+        excerpts = extract_excerpts(chunk, Query(question="?"), doc, agent=agent)
 
     assert len(excerpts) == 1
     e = excerpts[0]
-    assert e.line_start == chunk.line_start
-    assert e.line_end == chunk.line_end
-    assert e.section_path == chunk.section_path
+    assert e.section_path == ["Top", "Second"]
+    assert e.line_start == 9
+    assert e.line_end == 9
 
 
 def test_which_subquestion_and_confidence_propagate(tmp_path: Path) -> None:
@@ -112,7 +124,7 @@ def test_which_subquestion_and_confidence_propagate(tmp_path: Path) -> None:
         )
     ]
     with agent.override(model=_canned(candidates)):
-        excerpts = extract_excerpts(chunk, Query(question="?"), agent=agent)
+        excerpts = extract_excerpts(chunk, Query(question="?"), doc, agent=agent)
 
     assert len(excerpts) == 1
     assert excerpts[0].which_subquestion == "Which animal is described?"
@@ -132,6 +144,6 @@ def test_non_substring_candidates_are_dropped(tmp_path: Path) -> None:
     ]
 
     with agent.override(model=_canned(candidates)):
-        excerpts = extract_excerpts(chunk, Query(question="anything"), agent=agent)
+        excerpts = extract_excerpts(chunk, Query(question="anything"), doc, agent=agent)
 
     assert [e.text for e in excerpts] == ["The quick brown fox"]

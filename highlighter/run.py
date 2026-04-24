@@ -32,5 +32,5 @@ def run_pipeline(
     chunks = chunk_document(doc, chunk_size=chunk_size, chunk_overlap=chunk_overlap)
     excerpts: list[Excerpt] = []
     for chunk in chunks:
-        excerpts.extend(extract_excerpts(chunk, query, agent=extract_agent))
+        excerpts.extend(extract_excerpts(chunk, query, doc, agent=extract_agent))
     return PipelineResult(query=query, excerpts=excerpts)
