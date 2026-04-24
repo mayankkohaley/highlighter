@@ -23,7 +23,7 @@ uv run ruff check .    # must stay clean
 
 ## Commit style
 
-- **Small, focused commits.** One concern per commit. Impl and the tests
+- **Small, focused commits.** One concern per commit. Implementation and the tests
   that drove it land together.
 - **Conventional Commits** (`feat:`, `fix:`, `test:`, `refactor:`,
   `docs:`, `chore:`, `build:`, …).
