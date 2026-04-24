@@ -27,7 +27,10 @@ uv run ruff check .    # must stay clean
   that drove it land together.
 - **Conventional Commits** (`feat:`, `fix:`, `test:`, `refactor:`,
   `docs:`, `chore:`, `build:`, …).
-- **Subject line under 80 characters.** Use the body for detail.
+- **Subject line under 80 characters.**
+   Use the body for detail in the following format
+   1. ...
+   2. ...
 - Propose a commit breakdown before running `git commit` on non-trivial
   work; wait for the user's go-ahead.
 
