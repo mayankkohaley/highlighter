@@ -16,6 +16,12 @@ def _canned(candidates: list[RawExcerpt]):
     return canned_function_model(_ExtractorOutput(excerpts=candidates))
 
 
+def test_extractor_agent_pins_temperature_to_zero_for_determinism() -> None:
+    agent = build_extractor_agent()
+
+    assert agent.model_settings.get("temperature") == 0.0
+
+
 def test_tracer_returns_one_verified_excerpt(tmp_path: Path) -> None:
     md = tmp_path / "doc.md"
     md.write_text("# Title\n\nThe quick brown fox jumps over the lazy dog.\n")

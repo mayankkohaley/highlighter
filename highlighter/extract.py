@@ -42,7 +42,12 @@ class Excerpt(BaseModel):
 def build_extractor_agent(
     model: str = _DEFAULT_MODEL,
 ) -> Agent[None, _ExtractorOutput]:
-    return Agent(model, output_type=_ExtractorOutput, instructions=_INSTRUCTIONS)
+    return Agent(
+        model,
+        output_type=_ExtractorOutput,
+        instructions=_INSTRUCTIONS,
+        model_settings={"temperature": 0.0},
+    )
 
 
 def _build_prompt(chunk_text: str, query: Query) -> str:
