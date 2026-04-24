@@ -72,16 +72,11 @@ class ExtractResult(BaseModel):
     verified: list[Excerpt]
 
 
-def extract_excerpts_verbose(
+def _verify_candidates(
     chunk: Chunk,
-    query: Query,
     doc: NormalizedDoc,
-    *,
-    agent: Agent[None, _ExtractorOutput] | None = None,
-) -> ExtractResult:
-    agent = agent or build_extractor_agent()
-    prompt = _build_prompt(chunk.text, query)
-    raw = agent.run_sync(prompt).output.excerpts
+    raw: list[RawExcerpt],
+) -> list[Excerpt]:
     verified: list[Excerpt] = []
     for c in raw:
         span = find_span(chunk.text, c.text)
@@ -98,7 +93,41 @@ def extract_excerpts_verbose(
             line_end=line_end,
             section_path=doc.section_path_for_line(line_start),
         ))
-    return ExtractResult(prompt=prompt, raw_candidates=raw, verified=verified)
+    return verified
+
+
+def extract_excerpts_verbose(
+    chunk: Chunk,
+    query: Query,
+    doc: NormalizedDoc,
+    *,
+    agent: Agent[None, _ExtractorOutput] | None = None,
+) -> ExtractResult:
+    agent = agent or build_extractor_agent()
+    prompt = _build_prompt(chunk.text, query)
+    raw = agent.run_sync(prompt).output.excerpts
+    return ExtractResult(
+        prompt=prompt,
+        raw_candidates=raw,
+        verified=_verify_candidates(chunk, doc, raw),
+    )
+
+
+async def extract_excerpts_verbose_async(
+    chunk: Chunk,
+    query: Query,
+    doc: NormalizedDoc,
+    *,
+    agent: Agent[None, _ExtractorOutput] | None = None,
+) -> ExtractResult:
+    agent = agent or build_extractor_agent()
+    prompt = _build_prompt(chunk.text, query)
+    raw = (await agent.run(prompt)).output.excerpts
+    return ExtractResult(
+        prompt=prompt,
+        raw_candidates=raw,
+        verified=_verify_candidates(chunk, doc, raw),
+    )
 
 
 def extract_excerpts(
