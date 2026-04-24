@@ -22,6 +22,7 @@ class PipelineCaseResult(BaseModel):
     predicted: list[str]
     matched_expected: list[str]
     missing_expected: list[str]
+    raw_candidates: list[str] = []
 
 
 def run_pipeline_case(
@@ -54,4 +55,5 @@ def run_pipeline_case(
         predicted=predicted,
         matched_expected=matched,
         missing_expected=missing,
+        raw_candidates=[c.text for c in result.raw_candidates],
     )

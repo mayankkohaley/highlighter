@@ -99,3 +99,38 @@ def test_run_pipeline_case_respects_custom_chunk_size(tmp_path: Path) -> None:
 
     assert len(small.predicted) > len(large.predicted)
     assert len(large.predicted) == 1
+
+
+def test_run_pipeline_case_exposes_raw_candidates(tmp_path: Path) -> None:
+    # Raw candidates (pre-verification) must be surfaced to the runner so that
+    # debug tooling can distinguish "model never returned it" from "returned
+    # but failed substring check".
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    (docs / "doc.md").write_text("# Title\n\nThe quick brown fox.\n")
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    extraction = _ExtractorOutput(
+        excerpts=[
+            RawExcerpt(text="quick brown fox"),
+            RawExcerpt(text="HALLUCINATED span"),
+        ]
+    )
+    case = PipelineCase(name="c", document="doc.md", question="?", expected_excerpts=[])
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        result = run_pipeline_case(
+            case,
+            docs_dir=docs,
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    assert "quick brown fox" in result.raw_candidates
+    assert "HALLUCINATED span" in result.raw_candidates
+    assert result.predicted == ["quick brown fox"]
