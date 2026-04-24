@@ -45,3 +45,15 @@ def test_cli_prints_question_sub_questions_and_excerpts(
     assert "What animal is described?" in out
     assert "Which animal is described?" in out
     assert "quick brown fox" in out
+
+
+def test_cli_missing_question_exits_with_error(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    md.write_text("irrelevant\n")
+
+    from highlighter.__main__ import _main
+
+    with pytest.raises(SystemExit) as exc:
+        _main(["prog", str(md)])
+
+    assert exc.value.code != 0
