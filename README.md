@@ -206,6 +206,60 @@ Swap providers via the `model` argument: `build_extractor_agent(model="openai:gp
 `"ollama:llama3"`, etc. Requires the corresponding API key env var for
 hosted providers (e.g. `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`).
 
+## Evals
+
+Two separate tracks measure extraction quality:
+
+- **Stage 3 (chunk-level)** — pins one chunk per case and tests the
+  extractor in isolation, bypassing Stage 1 and chunk selection.
+- **Pipeline (end-to-end)** — runs Stage 0→3 against the whole
+  document so Stage 1's generated sub-questions and rubric are part
+  of the measurement.
+
+Both report precision/recall/F1 via substring match against the
+fixture's `expected_excerpts` and support a baseline + regression gate.
+
+Fixture layout:
+
+```
+evals/fixtures/
+├── cases/          # Stage 3 cases (one chunk per case)
+├── pipeline/       # pipeline cases (whole document)
+└── docs/           # markdown docs, shared by both tracks
+```
+
+### Stage 3
+
+```
+uv run python -m evals                    # all cases, one run each
+uv run python -m evals --case <name>      # single case by name
+uv run python -m evals --runs 3           # repeat each N times
+uv run python -m evals --debug            # also print prompt + raw LLM output
+uv run python -m evals --write-baseline   # record current mean scores
+uv run python -m evals --check-baseline   # gate: exit non-zero on regression
+```
+
+Baseline file: `evals/baseline.json`. Default tolerance: `0.02`.
+
+### Pipeline
+
+```
+uv run python -m evals.pipeline                 # all cases, one run each
+uv run python -m evals.pipeline --case <name>   # single case by name
+uv run python -m evals.pipeline --runs 3        # repeat each N times
+uv run python -m evals.pipeline --debug         # also print generated sub-Qs + rubric
+uv run python -m evals.pipeline --write-baseline
+uv run python -m evals.pipeline --check-baseline
+```
+
+Baseline file: `evals/baseline-pipeline.json`. Default tolerance:
+`0.05` — wider than Stage 3 because Stage 1 generation adds variance
+on top of extraction.
+
+`--debug` is the lever for iterating on Stage 1: it surfaces the
+sub-questions and rubric that Stage 1 produced for each case, so you
+can see where the prompt is pulling the pipeline off-course.
+
 ## Development
 
 ```
