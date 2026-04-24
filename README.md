@@ -55,8 +55,8 @@ uv run python -m highlighter <markdown-file> -q "your question"
 | ------------------- | -------- | ------------------------------------- | ---------------------------------------------- |
 | `<markdown-file>`   | yes      | —                                     | Positional. Path to a markdown document.       |
 | `-q`, `--question`  | yes      | —                                     | The question to ask.                           |
-| `--chunk-size`      | no       | `800`                                 | Tokens per chunk.                              |
-| `--chunk-overlap`   | no       | `80`                                  | Token overlap between consecutive chunks.      |
+| `--chunk-size`      | no       | `2000`                                | Tokens per chunk.                              |
+| `--chunk-overlap`   | no       | `200`                                 | Token overlap between consecutive chunks.      |
 
 Requires an API key for the configured provider (default:
 `anthropic:claude-haiku-4-5-20251001`, so `ANTHROPIC_API_KEY` must be
@@ -146,7 +146,7 @@ from highlighter.normalize import normalize
 from highlighter.chunk import chunk_document
 
 doc = normalize("path/to/doc.md")
-chunks = chunk_document(doc, chunk_size=800, chunk_overlap=80)
+chunks = chunk_document(doc, chunk_size=2000, chunk_overlap=200)
 
 for c in chunks:
     c.text            # chunk text, including prepended overlap from the prior chunk

@@ -22,8 +22,8 @@ def run_pipeline(
     doc_path: str | Path,
     question: str,
     *,
-    chunk_size: int = 800,
-    chunk_overlap: int = 80,
+    chunk_size: int = 2000,
+    chunk_overlap: int = 200,
     expand_agent: Agent[None, _QueryExpansion] | None = None,
     extract_agent: Agent[None, _ExtractorOutput] | None = None,
 ) -> PipelineResult:

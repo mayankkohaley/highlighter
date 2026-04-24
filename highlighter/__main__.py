@@ -56,8 +56,8 @@ def _main(
     )
     parser.add_argument("file", help="Path to a markdown document.")
     parser.add_argument("-q", "--question", required=True, help="The question to ask.")
-    parser.add_argument("--chunk-size", type=int, default=800)
-    parser.add_argument("--chunk-overlap", type=int, default=80)
+    parser.add_argument("--chunk-size", type=int, default=2000)
+    parser.add_argument("--chunk-overlap", type=int, default=200)
     args = parser.parse_args(argv[1:])
 
     result = run_pipeline(
