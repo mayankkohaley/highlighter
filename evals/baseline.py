@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, field_validator
-
-from evals.runner import CaseResult
 
 _SCORE_DECIMALS = 3
 
@@ -46,10 +45,12 @@ def load(path: Path | str) -> Baseline:
     return Baseline.model_validate_json(Path(path).read_text())
 
 
-def aggregate(runs_per_case: list[list[CaseResult]]) -> Baseline:
+def aggregate(runs_per_case: list[list[Any]]) -> Baseline:
     """Compute mean precision/recall/F1 per case across its runs.
 
-    All runs in a sub-list share a case name; the first run supplies it.
+    Each result in a sub-list must expose ``.case.name`` and a ``.score``
+    with ``.precision``, ``.recall``, ``.f1`` floats. Both chunk-level
+    (CaseResult) and pipeline-level (PipelineCaseResult) results qualify.
     """
     cases: dict[str, CaseBaseline] = {}
     for runs in runs_per_case:
