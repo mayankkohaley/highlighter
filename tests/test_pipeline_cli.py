@@ -105,6 +105,86 @@ def test_cli_debug_prints_generated_subquestions_and_rubric(
     assert "RUBRIC_PROBE" in out
 
 
+def test_cli_debug_marks_each_raw_candidate_as_verified_or_dropped(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs, cases = _tiny_suite(tmp_path)
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    # One candidate verifies, one is a hallucination that gets dropped.
+    extraction = _ExtractorOutput(
+        excerpts=[
+            RawExcerpt(text="Node.js 20 or later"),
+            RawExcerpt(text="HALLUCINATED_DROPPED_SPAN"),
+        ]
+    )
+    expand_agent, extract_agent, (expand_ov, extract_ov) = _overrides(expansion, extraction)
+
+    from evals.pipeline.__main__ import _main
+
+    with expand_ov, extract_ov:
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--debug",
+            ],
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    # Both candidates surface in the debug block with their verification status.
+    assert "[verified]" in out
+    assert "[dropped]" in out
+    # Verified span has its text; dropped span has its text.
+    verified_lines = [line for line in out.splitlines() if "[verified]" in line]
+    dropped_lines = [line for line in out.splitlines() if "[dropped]" in line]
+    assert any("Node.js 20 or later" in line for line in verified_lines)
+    assert any("HALLUCINATED_DROPPED_SPAN" in line for line in dropped_lines)
+
+
+def test_cli_debug_with_multi_runs_still_prints_stage_details(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # --debug should still surface stage 1 and raw-candidate output when
+    # --runs > 1 (otherwise diagnosing anything that needs repeated samples
+    # requires dropping back to --runs 1, losing the variance signal).
+    docs, cases = _tiny_suite(tmp_path)
+    expansion = _QueryExpansion(sub_questions=["SUB_Q_PROBE"], rubric="RUBRIC_PROBE")
+    extraction = _ExtractorOutput(
+        excerpts=[RawExcerpt(text="Node.js 20 or later")]
+    )
+    expand_agent, extract_agent, (expand_ov, extract_ov) = _overrides(expansion, extraction)
+
+    from evals.pipeline.__main__ import _main
+
+    with expand_ov, extract_ov:
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--runs", "2",
+                "--debug",
+            ],
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    # Multi-run aggregation is still there.
+    assert "2 runs" in out
+    # AND debug output from at least one run surfaces.
+    assert "SUB_Q_PROBE" in out
+    assert "RUBRIC_PROBE" in out
+    assert "[verified]" in out
+
+
 def test_cli_runs_flag_reruns_each_case_and_reports_f1_range(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

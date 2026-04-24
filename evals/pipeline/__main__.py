@@ -49,10 +49,16 @@ def _format_case_single(result: PipelineCaseResult, debug: bool = False) -> str:
         for sq in result.query.sub_questions:
             lines.append(f"    - {sq}")
         lines.append(f"  rubric: {result.query.rubric}")
+        lines.append("  --- stage 3 raw candidates ---")
+        lines.append(f"  raw candidates ({len(result.raw_candidates)}):")
+        verified_set = set(result.predicted)
+        for text in result.raw_candidates:
+            marker = "[verified]" if text in verified_set else "[dropped] "
+            lines.append(f"    {marker} > {text}")
     return "\n".join(lines)
 
 
-def _format_case_multi(runs: list[PipelineCaseResult]) -> str:
+def _format_case_multi(runs: list[PipelineCaseResult], debug: bool = False) -> str:
     name = runs[0].case.name
     n = len(runs)
     f1s = [r.score.f1 for r in runs]
@@ -64,6 +70,12 @@ def _format_case_multi(runs: list[PipelineCaseResult]) -> str:
         f"  precision: min={min(ps):.2f} max={max(ps):.2f} mean={sum(ps)/n:.2f}",
         f"  recall:    min={min(rs):.2f} max={max(rs):.2f} mean={sum(rs)/n:.2f}",
     ]
+    if debug:
+        lines.append("  --- first-run debug ---")
+        first = _format_case_single(runs[0], debug=True)
+        # Indent the single-run rendering under the multi-run block.
+        for sub in first.splitlines()[1:]:  # skip the duplicate case name
+            lines.append(sub)
     return "\n".join(lines)
 
 
@@ -156,7 +168,7 @@ def _main(
         if args.runs == 1:
             print(_format_case_single(runs[0], debug=args.debug))
         else:
-            print(_format_case_multi(runs))
+            print(_format_case_multi(runs, debug=args.debug))
         print()
     print(_format_aggregate(runs_per_case, args.runs))
 
