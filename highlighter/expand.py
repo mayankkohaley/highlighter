@@ -10,10 +10,13 @@ _DEFAULT_MODEL = "anthropic:claude-haiku-4-5-20251001"
 
 _INSTRUCTIONS = (
     "Expand the user's question into a query plan for a document-reading "
-    "assistant. Return: (a) 3 to 7 focused sub-questions or facets that "
-    "decompose the original question, and (b) a one-to-two sentence relevance "
-    "rubric describing what would count as a useful verbatim excerpt when "
-    "answering the question."
+    "assistant. Return: "
+    "(a) 3 to 7 sub-questions. Each sub-question must narrow the original "
+    "question to a specific facet it already implies; do not broaden it "
+    "into adjacent topics. "
+    "(b) A relevance rubric in two halves: what counts as a useful verbatim "
+    "excerpt AND what does not. Derive the exclusions from the question's "
+    "framing — anything outside the user's literal ask should be called out."
 )
 
 
