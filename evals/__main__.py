@@ -29,6 +29,10 @@ def _format_case(result: CaseResult) -> str:
     )
     if result.missing_expected:
         lines.append(f"  missing: {result.missing_expected}")
+    if result.predicted:
+        lines.append(f"  predicted excerpts ({len(result.predicted)}):")
+        for text in result.predicted:
+            lines.append(f"    > {text}")
     return "\n".join(lines)
 
 
