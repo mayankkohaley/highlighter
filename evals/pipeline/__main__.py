@@ -108,8 +108,8 @@ def _main(
     parser.add_argument("--docs-dir", default="evals/fixtures/docs")
     parser.add_argument("--case", help="Run a single case by name.")
     parser.add_argument("--runs", type=int, default=1)
-    parser.add_argument("--chunk-size", type=int, default=2000)
-    parser.add_argument("--chunk-overlap", type=int, default=200)
+    parser.add_argument("--chunk-size", type=int, default=800)
+    parser.add_argument("--chunk-overlap", type=int, default=80)
     parser.add_argument(
         "--debug",
         action="store_true",

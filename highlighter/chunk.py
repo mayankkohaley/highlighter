@@ -42,8 +42,8 @@ def _line_number_at(text: str, char_index: int) -> int:
 def chunk_document(
     doc: NormalizedDoc,
     *,
-    chunk_size: int = 2000,
-    chunk_overlap: int = 200,
+    chunk_size: int = 800,
+    chunk_overlap: int = 80,
 ) -> list[Chunk]:
     chunker = RecursiveChunker(
         tokenizer=_TOKENIZER,

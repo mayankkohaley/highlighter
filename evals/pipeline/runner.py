@@ -28,8 +28,8 @@ def run_pipeline_case(
     case: PipelineCase,
     *,
     docs_dir: Path | str,
-    chunk_size: int = 2000,
-    chunk_overlap: int = 200,
+    chunk_size: int = 800,
+    chunk_overlap: int = 80,
     expand_agent: Agent[None, _QueryExpansion] | None = None,
     extract_agent: Agent[None, _ExtractorOutput] | None = None,
 ) -> PipelineCaseResult:
