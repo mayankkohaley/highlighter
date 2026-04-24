@@ -1,0 +1,46 @@
+# Stage 3 eval cases for the AgentCore get-started CLI doc.
+
+document: agentcore-get-started-cli.md
+
+cases:
+
+  - name: agentcore-prerequisites
+    chunk_selector:
+      section_path:
+        - "Get started with Amazon Bedrock AgentCore"
+        - "Prerequisites"
+    query:
+      question: What are the prerequisites for deploying an AgentCore agent?
+      sub_questions:
+        - Which language runtimes and versions are required?
+        - What AWS-specific setup is needed before deploying?
+        - Are there permissions or accounts the user must have in place?
+      rubric: >
+        Useful excerpts name a specific piece of software, a version,
+        an account type, or a permission that a user must have in place
+        before deploying. Generic statements about AWS or installation
+        are not useful unless they state a concrete requirement.
+    expected_excerpts:
+      - "Node.js 20 or later"
+      - "npm"
+      - "AWS account with credentials configured"
+      - "Your identity needs permissions to make AgentCore API calls"
+      - "IAM permissions"
+
+  - name: agentcore-agent-language
+    chunk_selector:
+      section_path:
+        - "Get started with Amazon Bedrock AgentCore"
+        - "Prerequisites"
+    query:
+      question: Which language is needed for writing the agent?
+      sub_questions:
+        - What programming language is the agent code written in?
+        - What version of that language is required?
+      rubric: >
+        Useful excerpts name the programming language used to write the
+        agent's own code, and any required version of that language.
+        Do not include tools, accounts, or permissions needed to deploy —
+        only the language used for writing the agent itself.
+    expected_excerpts:
+      - "Python 3.10 or later"
