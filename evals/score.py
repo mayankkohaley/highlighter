@@ -17,6 +17,9 @@ def _f1(precision: float, recall: float) -> float:
 
 
 def score_case(predicted: list[str], expected: list[str]) -> CaseScore:
+    if not predicted and not expected:
+        # Nothing should be extracted, nothing was — vacuously correct.
+        return CaseScore(precision=1.0, recall=1.0, f1=1.0)
     matched_predicted = sum(
         1 for p in predicted if any(e in p for e in expected)
     )

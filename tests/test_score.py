@@ -38,3 +38,12 @@ def test_missing_expected_phrase_drops_recall() -> None:
 
     assert result.precision == 1.0
     assert result.recall == 0.5
+
+
+def test_empty_predicted_and_empty_expected_is_perfect() -> None:
+    # "Nothing should be extracted from this chunk" and nothing was — vacuously correct.
+    result = score_case(predicted=[], expected=[])
+
+    assert result.precision == 1.0
+    assert result.recall == 1.0
+    assert result.f1 == 1.0
