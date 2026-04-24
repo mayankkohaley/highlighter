@@ -7,8 +7,6 @@ dependencies = [
     "pydantic>=2",
     "chonkie>=1",
     "tiktoken>=0.7",
-    "huggingface-hub>=0.24",
-    "jsonschema>=4",
     "pydantic-ai>=0.0.14",
 ]
 
