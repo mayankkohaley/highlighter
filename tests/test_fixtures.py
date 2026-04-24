@@ -1,25 +1,32 @@
 from pathlib import Path
 
-from evals.fixtures import load_case
+from evals.fixtures import load_cases
 
 
-def test_tracer_loads_minimal_case(tmp_path: Path) -> None:
-    yaml_path = tmp_path / "case.yaml"
+def test_load_cases_returns_all_cases_with_document_filled_in(tmp_path: Path) -> None:
+    yaml_path = tmp_path / "fixture.yaml"
     yaml_path.write_text(
-        "name: example\n"
         "document: agentcore-get-started-cli.md\n"
-        "chunk_selector:\n"
-        '  section_path: ["A", "B"]\n'
-        "query:\n"
-        "  question: What is X?\n"
-        "expected_excerpts:\n"
-        "  - foo\n"
+        "cases:\n"
+        "  - name: first\n"
+        "    chunk_selector:\n"
+        '      section_path: ["A"]\n'
+        "    query:\n"
+        "      question: What?\n"
+        "    expected_excerpts:\n"
+        "      - foo\n"
+        "  - name: second\n"
+        "    chunk_selector:\n"
+        '      section_path: ["B"]\n'
+        "    query:\n"
+        "      question: Why?\n"
+        "    expected_excerpts:\n"
+        "      - bar\n"
     )
 
-    case = load_case(yaml_path)
+    cases = load_cases(yaml_path)
 
-    assert case.name == "example"
-    assert case.document == "agentcore-get-started-cli.md"
-    assert case.chunk_selector.section_path == ["A", "B"]
-    assert case.query.question == "What is X?"
-    assert case.expected_excerpts == ["foo"]
+    assert [c.name for c in cases] == ["first", "second"]
+    assert all(c.document == "agentcore-get-started-cli.md" for c in cases)
+    assert cases[0].chunk_selector.section_path == ["A"]
+    assert cases[1].query.question == "Why?"

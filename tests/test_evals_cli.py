@@ -20,14 +20,15 @@ def test_cli_runs_one_case_and_prints_report(
     cases.mkdir()
     (docs / "doc.md").write_text("# Top\n\n## P\n\nNode.js 20 or later is required.\n")
     (cases / "p.yaml").write_text(
-        "name: p\n"
         "document: doc.md\n"
-        "chunk_selector:\n"
-        '  section_path: ["Top", "P"]\n'
-        "query:\n"
-        "  question: What is required?\n"
-        "expected_excerpts:\n"
-        '  - "Node.js 20 or later"\n'
+        "cases:\n"
+        "  - name: p\n"
+        "    chunk_selector:\n"
+        '      section_path: ["Top", "P"]\n'
+        "    query:\n"
+        "      question: What is required?\n"
+        "    expected_excerpts:\n"
+        '      - "Node.js 20 or later"\n'
     )
 
     from evals.__main__ import _main
@@ -63,14 +64,15 @@ def test_cli_report_includes_predicted_excerpt_text(
         "# Top\n\n## P\n\nNode.js 20 or later is required. The sky is blue.\n"
     )
     (cases / "p.yaml").write_text(
-        "name: p\n"
         "document: doc.md\n"
-        "chunk_selector:\n"
-        '  section_path: ["Top", "P"]\n'
-        "query:\n"
-        "  question: What is required?\n"
-        "expected_excerpts:\n"
-        '  - "Node.js 20 or later"\n'
+        "cases:\n"
+        "  - name: p\n"
+        "    chunk_selector:\n"
+        '      section_path: ["Top", "P"]\n'
+        "    query:\n"
+        "      question: What is required?\n"
+        "    expected_excerpts:\n"
+        '      - "Node.js 20 or later"\n'
     )
 
     from evals.__main__ import _main

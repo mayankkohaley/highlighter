@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from evals.fixtures import load_case
+from evals.fixtures import load_cases
 from evals.runner import run_case
 from highlighter.extract import (
     RawExcerpt,
@@ -17,16 +17,17 @@ def test_tracer_runs_one_case_and_scores_it(tmp_path: Path) -> None:
         "Need Node.js 20 or later to install.\n"
     )
     (tmp_path / "case.yaml").write_text(
-        "name: prereqs-test\n"
         "document: doc.md\n"
-        "chunk_selector:\n"
-        '  section_path: ["Top", "Prereqs"]\n'
-        "query:\n"
-        "  question: What do I need?\n"
-        "expected_excerpts:\n"
-        '  - "Node.js 20 or later"\n'
+        "cases:\n"
+        "  - name: prereqs-test\n"
+        "    chunk_selector:\n"
+        '      section_path: ["Top", "Prereqs"]\n'
+        "    query:\n"
+        "      question: What do I need?\n"
+        "    expected_excerpts:\n"
+        '      - "Node.js 20 or later"\n'
     )
-    case = load_case(tmp_path / "case.yaml")
+    case = load_cases(tmp_path / "case.yaml")[0]
 
     agent = build_extractor_agent()
     extraction = _ExtractorOutput(

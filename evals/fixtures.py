@@ -1,4 +1,14 @@
-"""Load and validate eval-case YAML fixtures."""
+"""Load and validate eval-case YAML fixtures.
+
+A fixture file holds one document and a list of cases against it:
+
+    document: <filename>     # in evals/fixtures/docs/
+    cases:
+      - name: <id>
+        chunk_selector: ...
+        query: ...
+        expected_excerpts: [...]
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -21,6 +31,30 @@ class EvalCase(BaseModel):
     expected_excerpts: list[str]
 
 
-def load_case(path: Path | str) -> EvalCase:
+class _FileCase(BaseModel):
+    """The per-case shape inside a fixture file (no document — that's shared)."""
+    name: str
+    chunk_selector: ChunkSelector
+    query: Query
+    expected_excerpts: list[str]
+
+
+class _FixtureFile(BaseModel):
+    document: str
+    cases: list[_FileCase]
+
+
+def load_cases(path: Path | str) -> list[EvalCase]:
+    """Load all cases from a fixture file, stamping the shared `document` onto each."""
     data = yaml.safe_load(Path(path).read_text())
-    return EvalCase.model_validate(data)
+    fixture = _FixtureFile.model_validate(data)
+    return [
+        EvalCase(
+            name=c.name,
+            document=fixture.document,
+            chunk_selector=c.chunk_selector,
+            query=c.query,
+            expected_excerpts=c.expected_excerpts,
+        )
+        for c in fixture.cases
+    ]

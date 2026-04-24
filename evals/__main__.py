@@ -11,7 +11,7 @@ from pathlib import Path
 
 from pydantic_ai import Agent
 
-from evals.fixtures import EvalCase, load_case
+from evals.fixtures import EvalCase, load_cases
 from evals.runner import CaseResult, run_case
 from highlighter.extract import _ExtractorOutput
 
@@ -47,7 +47,9 @@ def _format_aggregate(results: list[CaseResult]) -> str:
 
 
 def _load_cases(cases_dir: Path, name: str | None) -> list[EvalCase]:
-    cases = [load_case(p) for p in sorted(cases_dir.glob("*.yaml"))]
+    cases: list[EvalCase] = []
+    for p in sorted(cases_dir.glob("*.yaml")):
+        cases.extend(load_cases(p))
     if name is not None:
         cases = [c for c in cases if c.name == name]
     return cases
