@@ -1,0 +1,30 @@
+# Stage 3 eval cases for the Kubernetes v1.36.0 changelog.
+# Dimension: terse / structured — tests that the extractor does NOT
+# over-collect and returns one focused span per changelog entry.
+
+document: kubernetes-changelog.md
+
+cases:
+
+  - name: kubernetes-v1-36-deprecations
+    chunk_selector:
+      section_path:
+        - "v1.36.0"
+        - "Changes by Kind"
+        - "Deprecation"
+    query:
+      question: What was deprecated in Kubernetes v1.36?
+      sub_questions:
+        - Which APIs, flags, or fields were deprecated?
+        - What is the replacement or guidance for each deprecation?
+      rubric: >
+        Useful excerpts identify a specific API, flag, field, or feature
+        being deprecated in v1.36. Prefer one span per deprecated item
+        rather than returning a whole paragraph covering multiple items.
+    expected_excerpts:
+      - "Disabled git-repo"
+      - "Service .spec.externalIPs"
+      - "#137293"
+      - "SIG Apps, Network and Windows"
+      - "#137272"
+      - "access to the Raw field of metav1.FieldsV1 is deprecated. Code that constructs or reads FieldsV1 should migrate to the new NewFieldsV1(string)"
