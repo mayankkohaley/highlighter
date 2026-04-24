@@ -13,9 +13,14 @@ from pathlib import Path
 
 from pydantic_ai import Agent
 
+from evals.baseline import DEFAULT_TOLERANCE, aggregate, check_regressions
+from evals.baseline import load as load_baseline
+from evals.baseline import save as save_baseline
 from evals.fixtures import EvalCase, load_cases
 from evals.runner import CaseResult, run_case
 from highlighter.extract import _ExtractorOutput
+
+_DEFAULT_BASELINE_PATH = "evals/baseline.json"
 
 
 def _format_case_single(result: CaseResult, debug: bool = False) -> str:
@@ -117,6 +122,27 @@ def _main(
         action="store_true",
         help="Also print the prompt and raw model output for each case.",
     )
+    parser.add_argument(
+        "--write-baseline",
+        action="store_true",
+        help="After running, write per-case mean scores to the baseline file.",
+    )
+    parser.add_argument(
+        "--check-baseline",
+        action="store_true",
+        help="Compare current scores to the baseline file; exit non-zero on regression.",
+    )
+    parser.add_argument(
+        "--baseline-path",
+        default=_DEFAULT_BASELINE_PATH,
+        help=f"Baseline file path (default: {_DEFAULT_BASELINE_PATH}).",
+    )
+    parser.add_argument(
+        "--tolerance",
+        type=float,
+        default=DEFAULT_TOLERANCE,
+        help=f"F1 drop tolerance for --check-baseline (default: {DEFAULT_TOLERANCE}).",
+    )
     args = parser.parse_args(argv[1:])
 
     cases = _load_cases(Path(args.cases_dir), args.case)
@@ -133,6 +159,25 @@ def _main(
             print(_format_case_multi(runs))
         print()
     print(_format_aggregate(runs_per_case, args.runs))
+
+    if args.write_baseline:
+        baseline = aggregate(runs_per_case)
+        save_baseline(baseline, args.baseline_path)
+        print(f"\nWrote baseline to {args.baseline_path} ({len(baseline.cases)} cases).")
+
+    if args.check_baseline:
+        baseline = load_baseline(args.baseline_path)
+        current = aggregate(runs_per_case)
+        regressions = check_regressions(baseline, current, tolerance=args.tolerance)
+        if regressions:
+            print(f"\nRegressions ({len(regressions)}, tolerance={args.tolerance}):")
+            for r in regressions:
+                print(
+                    f"  {r.case_name}: baseline f1={r.baseline_f1:.2f}  "
+                    f"current f1={r.current_f1:.2f}  delta={r.delta:+.2f}"
+                )
+            return 1
+        print(f"\nBaseline OK: no regressions (tolerance={args.tolerance}).")
     return 0
 
 

@@ -199,3 +199,136 @@ def test_cli_runs_flag_reruns_each_case_and_reports_f1_range(
     assert "min=0.00" in out
     assert "max=1.00" in out
     assert "3 runs" in out
+
+
+def test_cli_write_baseline_writes_json_file(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs = tmp_path / "docs"
+    cases = tmp_path / "cases"
+    baseline_path = tmp_path / "baseline.json"
+    docs.mkdir()
+    cases.mkdir()
+    (docs / "doc.md").write_text("# Top\n\n## P\n\nNode.js 20 or later is required.\n")
+    (cases / "p.yaml").write_text(
+        "document: doc.md\n"
+        "cases:\n"
+        "  - name: p\n"
+        "    chunk_selector:\n"
+        '      section_path: ["Top", "P"]\n'
+        "    query:\n"
+        "      question: What is required?\n"
+        "    expected_excerpts:\n"
+        '      - "Node.js 20 or later"\n'
+    )
+
+    from evals.__main__ import _main
+    from evals.baseline import load as load_baseline
+
+    agent = build_extractor_agent()
+    extraction = _ExtractorOutput(excerpts=[RawExcerpt(text="Node.js 20 or later")])
+
+    with agent.override(model=canned_function_model(extraction)):
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--write-baseline",
+                "--baseline-path", str(baseline_path),
+            ],
+            extract_agent=agent,
+        )
+
+    assert rc == 0
+    assert baseline_path.exists()
+    baseline = load_baseline(baseline_path)
+    assert baseline.cases["p"].f1 == 1.0
+    assert baseline.cases["p"].precision == 1.0
+    assert baseline.cases["p"].recall == 1.0
+
+
+def _tiny_case_dirs(tmp_path: Path) -> tuple[Path, Path]:
+    docs = tmp_path / "docs"
+    cases = tmp_path / "cases"
+    docs.mkdir()
+    cases.mkdir()
+    (docs / "doc.md").write_text("# Top\n\n## P\n\nNode.js 20 or later is required.\n")
+    (cases / "p.yaml").write_text(
+        "document: doc.md\n"
+        "cases:\n"
+        "  - name: p\n"
+        "    chunk_selector:\n"
+        '      section_path: ["Top", "P"]\n'
+        "    query:\n"
+        "      question: What is required?\n"
+        "    expected_excerpts:\n"
+        '      - "Node.js 20 or later"\n'
+    )
+    return docs, cases
+
+
+def test_cli_check_baseline_exits_nonzero_when_current_f1_drops_below_baseline(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs, cases = _tiny_case_dirs(tmp_path)
+    baseline_path = tmp_path / "baseline.json"
+    # Hand-written baseline: case `p` was at F1=1.0 previously.
+    baseline_path.write_text(
+        '{"cases": {"p": {"precision": 1.0, "recall": 1.0, "f1": 1.0}}}'
+    )
+
+    from evals.__main__ import _main
+
+    agent = build_extractor_agent()
+    # Current run produces NO predicted excerpt → F1=0 → regression vs 1.0.
+    extraction = _ExtractorOutput(excerpts=[])
+
+    with agent.override(model=canned_function_model(extraction)):
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--check-baseline",
+                "--baseline-path", str(baseline_path),
+            ],
+            extract_agent=agent,
+        )
+
+    out = capsys.readouterr().out
+    assert rc != 0
+    assert "regression" in out.lower()
+    assert "p" in out  # case name surfaces
+
+
+def test_cli_check_baseline_exits_zero_when_scores_hold(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs, cases = _tiny_case_dirs(tmp_path)
+    baseline_path = tmp_path / "baseline.json"
+    baseline_path.write_text(
+        '{"cases": {"p": {"precision": 1.0, "recall": 1.0, "f1": 1.0}}}'
+    )
+
+    from evals.__main__ import _main
+
+    agent = build_extractor_agent()
+    extraction = _ExtractorOutput(excerpts=[RawExcerpt(text="Node.js 20 or later")])
+
+    with agent.override(model=canned_function_model(extraction)):
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--check-baseline",
+                "--baseline-path", str(baseline_path),
+            ],
+            extract_agent=agent,
+        )
+
+    assert rc == 0
