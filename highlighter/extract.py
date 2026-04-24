@@ -1,25 +1,12 @@
 """Stage 3: extract verbatim excerpts from a chunk that address a query."""
 from __future__ import annotations
 
-import re
-
 from pydantic import BaseModel
 from pydantic_ai import Agent
 
 from highlighter.chunk import Chunk
+from highlighter.matching import contains
 from highlighter.query import Query
-
-# Markdown emphasis/inline-code markers the model may or may not preserve when
-# quoting verbatim. Stripped symmetrically from both chunk and candidate for
-# the substring verification — keeps legitimate extractions from being dropped
-# when the model normalizes away bold/italic/code markers.
-_EMPHASIS_MARKERS = re.compile(r"[*_`]")
-
-
-def _matches(chunk_text: str, candidate: str) -> bool:
-    normalized_chunk = _EMPHASIS_MARKERS.sub("", chunk_text)
-    normalized_candidate = _EMPHASIS_MARKERS.sub("", candidate)
-    return normalized_candidate in normalized_chunk
 
 _DEFAULT_MODEL = "anthropic:claude-haiku-4-5-20251001"
 
@@ -100,7 +87,7 @@ def extract_excerpts_verbose(
             section_path=chunk.section_path,
         )
         for c in raw
-        if _matches(chunk.text, c.text)
+        if contains(chunk.text, c.text)
     ]
     return ExtractResult(prompt=prompt, raw_candidates=raw, verified=verified)
 
