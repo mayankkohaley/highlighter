@@ -13,9 +13,12 @@ _DEFAULT_MODEL = "anthropic:claude-haiku-4-5-20251001"
 _INSTRUCTIONS = (
     "You extract verbatim spans from a document chunk that address the user's "
     "question. Return EVERY span that is useful — if several bullets, sentences, "
-    "or clauses are all relevant, return each one separately. Prefer shorter, "
-    "focused spans over long paragraphs. Do not paraphrase, do not summarize, "
-    "do not invent. If the chunk contains nothing relevant, return an empty list."
+    "or clauses are all relevant, return each one separately. Prefer the natural "
+    "unit of meaning (full bullet, full sentence, discrete entry) — not a whole "
+    "paragraph, not a mid-unit fragment. Preserve any PR numbers, issue links, "
+    "citations, or attributions attached to the span verbatim. Do not paraphrase, "
+    "do not summarize, do not invent. If the chunk contains nothing relevant, "
+    "return an empty list."
 )
 
 
