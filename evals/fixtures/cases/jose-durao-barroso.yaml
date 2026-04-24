@@ -1,0 +1,42 @@
+# Stage 3 eval cases for the José Durão Barroso biographical article.
+# Dimension: narrative / biographical — tests extracting scattered factual
+# roles and dates from flowing prose with many named entities.
+
+document: jose-durao-barroso.md
+
+cases:
+
+  - name: barroso-political-positions
+    chunk_selector:
+      section_path:
+        - "José Durão Barroso"
+        - "Career"
+    query:
+      question: What political positions has José Manuel Barroso held?
+      sub_questions:
+        - What offices did Barroso hold in the Portuguese government?
+        - What offices did Barroso hold in the European Union?
+        - What party-leadership or parliamentary positions did Barroso hold?
+      rubric: >
+        Useful excerpts name a specific political office in government that
+        Barroso held — either in Portugal (ministerial role, secretary of
+        state, prime minister, parliamentary seat, party membership or
+        leadership) or in the European Union (Commission presidency).
+        Do NOT include: academic appointments, professorships, visiting-
+        scholar or fellow roles, think-tank positions, private-sector or
+        advisory roles, non-executive board seats, or commentary about
+        his tenure.
+    expected_excerpts:
+      - "joined the right-of-centre PPD"
+      - "Under-Secretary of State in the Ministry of Home Affairs"
+      - "Secretary of State for Foreign Affairs"
+      - "promoted to the post of Minister of Foreign Affairs"
+      - "elected to the Assembly of the Republic"
+      - "He became chairman of the Foreign Affairs Committee."
+      - "elected president of the PSD, succeeding Marcelo Rebelo"
+      - "Barroso subsequently became Prime Minister of Portugal on 6 April 2002"
+      - "Barroso, as EPP candidate, was chosen by the European Council"
+      - "On 16 September 2009, Barroso was re-elected"
+      - "president of the European Commission"
+      - "Acting Commissioner"
+      - "endorsed Barroso for a second term during the 2009"
