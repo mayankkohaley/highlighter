@@ -23,7 +23,12 @@ class _QueryExpansion(BaseModel):
 
 
 def build_query_agent(model: str = _DEFAULT_MODEL) -> Agent[None, _QueryExpansion]:
-    return Agent(model, output_type=_QueryExpansion, instructions=_INSTRUCTIONS)
+    return Agent(
+        model,
+        output_type=_QueryExpansion,
+        instructions=_INSTRUCTIONS,
+        model_settings={"temperature": 0.0},
+    )
 
 
 def expand_query(

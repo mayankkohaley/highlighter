@@ -6,6 +6,12 @@ def _canned(expansion: _QueryExpansion):
     return canned_function_model(expansion)
 
 
+def test_query_agent_pins_temperature_to_zero_for_determinism() -> None:
+    agent = build_query_agent()
+
+    assert agent.model_settings.get("temperature") == 0.0
+
+
 def test_tracer_expands_a_raw_question_into_a_structured_query() -> None:
     agent = build_query_agent()
     canned = _QueryExpansion(
