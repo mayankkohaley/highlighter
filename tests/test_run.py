@@ -7,6 +7,7 @@ from highlighter.extract import (
     build_extractor_agent,
 )
 from highlighter.run import run_pipeline
+from highlighter.synthesize import Synthesis, build_synthesis_agent
 from tests.llm_helpers import canned_function_model
 
 
@@ -154,3 +155,57 @@ def test_pipeline_consolidates_adjacent_verified_excerpts(tmp_path: Path) -> Non
     assert result.consolidated[0].text == "alpha line\nbeta line"
     assert result.consolidated[0].line_start == 3
     assert result.consolidated[0].line_end == 4
+
+
+def test_pipeline_skips_synthesis_by_default(tmp_path: Path) -> None:
+    # Synthesis costs tokens — default is opt-in.
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nalpha line.\n")
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    extraction = _ExtractorOutput(excerpts=[RawExcerpt(text="alpha line.")])
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        result = run_pipeline(
+            md,
+            question="?",
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    assert result.synthesis is None
+
+
+def test_pipeline_runs_synthesis_when_opted_in(tmp_path: Path) -> None:
+    md = tmp_path / "doc.md"
+    md.write_text("# Title\n\nalpha line.\n")
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    synthesis_agent = build_synthesis_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    extraction = _ExtractorOutput(excerpts=[RawExcerpt(text="alpha line.")])
+    canned_answer = Synthesis(answer="It is alpha. [1]", used_excerpts=[1])
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+        synthesis_agent.override(model=canned_function_model(canned_answer)),
+    ):
+        result = run_pipeline(
+            md,
+            question="?",
+            synthesize=True,
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+            synthesis_agent=synthesis_agent,
+        )
+
+    assert result.synthesis is not None
+    assert result.synthesis.answer == "It is alpha. [1]"
+    assert result.synthesis.used_excerpts == [1]

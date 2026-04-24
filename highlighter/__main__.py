@@ -13,6 +13,12 @@ from highlighter.expand import _QueryExpansion
 from highlighter.extract import Excerpt, _ExtractorOutput
 from highlighter.query import Query
 from highlighter.run import run_pipeline
+from highlighter.synthesize import Synthesis
+
+
+def _format_synthesis(s: Synthesis) -> str:
+    cited = ", ".join(str(i) for i in s.used_excerpts) if s.used_excerpts else "none"
+    return f"Answer:\n{s.answer}\n\nCited excerpts: {cited}\n"
 
 
 def _format_result(query: Query, excerpts: list[Excerpt]) -> str:
@@ -47,6 +53,7 @@ def _main(
     *,
     expand_agent: Agent[None, _QueryExpansion] | None = None,
     extract_agent: Agent[None, _ExtractorOutput] | None = None,
+    synthesis_agent: Agent[None, Synthesis] | None = None,
 ) -> int:
     parser = argparse.ArgumentParser(
         prog="highlighter",
@@ -58,6 +65,11 @@ def _main(
     parser.add_argument("-q", "--question", required=True, help="The question to ask.")
     parser.add_argument("--chunk-size", type=int, default=2000)
     parser.add_argument("--chunk-overlap", type=int, default=200)
+    parser.add_argument(
+        "--synthesize",
+        action="store_true",
+        help="Run the final LLM synthesis step to produce an answer citing the excerpts.",
+    )
     args = parser.parse_args(argv[1:])
 
     result = run_pipeline(
@@ -65,10 +77,14 @@ def _main(
         args.question,
         chunk_size=args.chunk_size,
         chunk_overlap=args.chunk_overlap,
+        synthesize=args.synthesize,
         expand_agent=expand_agent,
         extract_agent=extract_agent,
+        synthesis_agent=synthesis_agent,
     )
     print(_format_result(result.query, result.consolidated))
+    if result.synthesis is not None:
+        print(_format_synthesis(result.synthesis))
     return 0
 
 

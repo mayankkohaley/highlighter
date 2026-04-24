@@ -17,6 +17,8 @@ from highlighter.extract import (
 )
 from highlighter.normalize import normalize
 from highlighter.query import Query
+from highlighter.synthesize import Synthesis
+from highlighter.synthesize import synthesize as _synthesize
 
 
 class PipelineResult(BaseModel):
@@ -24,6 +26,7 @@ class PipelineResult(BaseModel):
     excerpts: list[Excerpt]
     consolidated: list[Excerpt] = []
     raw_candidates: list[RawExcerpt] = []
+    synthesis: Synthesis | None = None
 
 
 def run_pipeline(
@@ -32,8 +35,10 @@ def run_pipeline(
     *,
     chunk_size: int = 2000,
     chunk_overlap: int = 200,
+    synthesize: bool = False,
     expand_agent: Agent[None, _QueryExpansion] | None = None,
     extract_agent: Agent[None, _ExtractorOutput] | None = None,
+    synthesis_agent: Agent[None, Synthesis] | None = None,
 ) -> PipelineResult:
     doc = normalize(doc_path)
     query = expand_query(question, agent=expand_agent)
@@ -44,9 +49,12 @@ def run_pipeline(
         er = extract_excerpts_verbose(chunk, query, doc, agent=extract_agent)
         excerpts.extend(er.verified)
         raw_candidates.extend(er.raw_candidates)
+    consolidated = consolidate(excerpts, doc)
+    answer = _synthesize(query, consolidated, agent=synthesis_agent) if synthesize else None
     return PipelineResult(
         query=query,
         excerpts=excerpts,
-        consolidated=consolidate(excerpts, doc),
+        consolidated=consolidated,
         raw_candidates=raw_candidates,
+        synthesis=answer,
     )
