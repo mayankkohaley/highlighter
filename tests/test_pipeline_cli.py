@@ -143,3 +143,105 @@ def test_cli_runs_flag_reruns_each_case_and_reports_f1_range(
     assert "min=0.00" in out
     assert "max=1.00" in out
     assert "3 runs" in out
+
+
+def test_cli_write_baseline_writes_json_file(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],  # noqa: ARG001
+) -> None:
+    docs, cases = _tiny_suite(tmp_path)
+    baseline_path = tmp_path / "baseline-pipeline.json"
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    extraction = _ExtractorOutput(
+        excerpts=[RawExcerpt(text="Node.js 20 or later")]
+    )
+    expand_agent, extract_agent, (expand_ov, extract_ov) = _overrides(expansion, extraction)
+
+    from evals.baseline import load as load_baseline
+    from evals.pipeline.__main__ import _main
+
+    with expand_ov, extract_ov:
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--write-baseline",
+                "--baseline-path", str(baseline_path),
+            ],
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    assert rc == 0
+    assert baseline_path.exists()
+    baseline = load_baseline(baseline_path)
+    assert baseline.cases["runtime"].f1 == 1.0
+
+
+def test_cli_check_baseline_exits_nonzero_on_regression(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs, cases = _tiny_suite(tmp_path)
+    baseline_path = tmp_path / "baseline-pipeline.json"
+    baseline_path.write_text(
+        '{"cases": {"runtime": {"precision": 1.0, "recall": 1.0, "f1": 1.0}}}'
+    )
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    # Empty extraction → current F1=0 vs baseline 1.0 → regression.
+    extraction = _ExtractorOutput(excerpts=[])
+    expand_agent, extract_agent, (expand_ov, extract_ov) = _overrides(expansion, extraction)
+
+    from evals.pipeline.__main__ import _main
+
+    with expand_ov, extract_ov:
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--check-baseline",
+                "--baseline-path", str(baseline_path),
+            ],
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    out = capsys.readouterr().out
+    assert rc != 0
+    assert "regression" in out.lower()
+    assert "runtime" in out
+
+
+def test_cli_check_baseline_passes_when_scores_hold(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],  # noqa: ARG001
+) -> None:
+    docs, cases = _tiny_suite(tmp_path)
+    baseline_path = tmp_path / "baseline-pipeline.json"
+    baseline_path.write_text(
+        '{"cases": {"runtime": {"precision": 1.0, "recall": 1.0, "f1": 1.0}}}'
+    )
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    extraction = _ExtractorOutput(
+        excerpts=[RawExcerpt(text="Node.js 20 or later")]
+    )
+    expand_agent, extract_agent, (expand_ov, extract_ov) = _overrides(expansion, extraction)
+
+    from evals.pipeline.__main__ import _main
+
+    with expand_ov, extract_ov:
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--check-baseline",
+                "--baseline-path", str(baseline_path),
+            ],
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    assert rc == 0
