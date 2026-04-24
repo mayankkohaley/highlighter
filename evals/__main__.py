@@ -1,7 +1,9 @@
 """CLI: run eval cases and print a precision/recall/F1 report.
 
-    uv run python -m evals                    # all cases in evals/fixtures/cases/
+    uv run python -m evals                    # all cases, one run each
     uv run python -m evals --case <name>      # single case by name
+    uv run python -m evals --runs N           # re-run each case N times,
+                                              # report min/max/mean F1
 """
 from __future__ import annotations
 
@@ -16,7 +18,7 @@ from evals.runner import CaseResult, run_case
 from highlighter.extract import _ExtractorOutput
 
 
-def _format_case(result: CaseResult) -> str:
+def _format_case_single(result: CaseResult) -> str:
     lines: list[str] = []
     s = result.score
     lines.append(result.case.name)
@@ -36,14 +38,43 @@ def _format_case(result: CaseResult) -> str:
     return "\n".join(lines)
 
 
-def _format_aggregate(results: list[CaseResult]) -> str:
-    if not results:
+def _format_case_multi(runs: list[CaseResult]) -> str:
+    name = runs[0].case.name
+    n = len(runs)
+    f1s = [r.score.f1 for r in runs]
+    ps = [r.score.precision for r in runs]
+    rs = [r.score.recall for r in runs]
+    lines = [
+        name,
+        f"  f1:        min={min(f1s):.2f} max={max(f1s):.2f} mean={sum(f1s)/n:.2f} ({n} runs)",
+        f"  precision: min={min(ps):.2f} max={max(ps):.2f} mean={sum(ps)/n:.2f}",
+        f"  recall:    min={min(rs):.2f} max={max(rs):.2f} mean={sum(rs)/n:.2f}",
+    ]
+    return "\n".join(lines)
+
+
+def _format_aggregate(
+    runs_per_case: list[list[CaseResult]], n_runs: int
+) -> str:
+    if not runs_per_case:
         return "No cases found."
-    n = len(results)
-    p = sum(r.score.precision for r in results) / n
-    r = sum(r.score.recall for r in results) / n
-    f = sum(r.score.f1 for r in results) / n
-    return f"Aggregate ({n} cases): precision={p:.2f}   recall={r:.2f}   f1={f:.2f}"
+    mean_per_case_f1 = [
+        sum(r.score.f1 for r in runs) / len(runs) for runs in runs_per_case
+    ]
+    mean_per_case_p = [
+        sum(r.score.precision for r in runs) / len(runs) for runs in runs_per_case
+    ]
+    mean_per_case_r = [
+        sum(r.score.recall for r in runs) / len(runs) for runs in runs_per_case
+    ]
+    n_cases = len(runs_per_case)
+    suffix = f" × {n_runs} runs" if n_runs > 1 else ""
+    return (
+        f"Aggregate ({n_cases} cases{suffix}): "
+        f"precision={sum(mean_per_case_p)/n_cases:.2f}   "
+        f"recall={sum(mean_per_case_r)/n_cases:.2f}   "
+        f"f1={sum(mean_per_case_f1)/n_cases:.2f}"
+    )
 
 
 def _load_cases(cases_dir: Path, name: str | None) -> list[EvalCase]:
@@ -67,16 +98,28 @@ def _main(
     parser.add_argument("--cases-dir", default="evals/fixtures/cases")
     parser.add_argument("--docs-dir", default="evals/fixtures/docs")
     parser.add_argument("--case", help="Run a single case by name.")
+    parser.add_argument(
+        "--runs",
+        type=int,
+        default=1,
+        help="Re-run each case N times and report min/max/mean F1.",
+    )
     args = parser.parse_args(argv[1:])
 
     cases = _load_cases(Path(args.cases_dir), args.case)
-    results = [
-        run_case(c, docs_dir=args.docs_dir, extract_agent=extract_agent) for c in cases
-    ]
-    for r in results:
-        print(_format_case(r))
+    runs_per_case: list[list[CaseResult]] = []
+    for c in cases:
+        runs = [
+            run_case(c, docs_dir=args.docs_dir, extract_agent=extract_agent)
+            for _ in range(args.runs)
+        ]
+        runs_per_case.append(runs)
+        if args.runs == 1:
+            print(_format_case_single(runs[0]))
+        else:
+            print(_format_case_multi(runs))
         print()
-    print(_format_aggregate(results))
+    print(_format_aggregate(runs_per_case, args.runs))
     return 0
 
 
