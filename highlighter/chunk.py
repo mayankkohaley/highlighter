@@ -1,12 +1,18 @@
 """Stage 2: chunk a normalized document into overlapping, boundary-aware pieces."""
 from __future__ import annotations
 
+import tiktoken
 from chonkie import OverlapRefinery, RecursiveChunker, RecursiveLevel, RecursiveRules
 from pydantic import BaseModel
 
 from highlighter.normalize import NormalizedDoc
 
-_TOKENIZER = "cl100k_base"
+# Pre-resolve the tokenizer as a tiktoken.Encoding instead of passing the
+# string "cl100k_base". Chonkie's string resolver tries the HuggingFace
+# `tokenizers` backend before tiktoken and will spin on HF rate-limits
+# (HTTP 429) even though this encoding is native to tiktoken. Handing
+# Chonkie the Encoding directly trips its type-sniff path and skips HF.
+_TOKENIZER = tiktoken.get_encoding("cl100k_base")
 
 # Markdown-aware splitting hierarchy. Each level is a fallback tried when the
 # previous level doesn't yield small-enough chunks.

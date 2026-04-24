@@ -1,7 +1,19 @@
 from pathlib import Path
 
-from highlighter.chunk import chunk_document
+import tiktoken
+
+from highlighter.chunk import _TOKENIZER, chunk_document
 from highlighter.normalize import normalize
+
+
+def test_tokenizer_is_a_preresolved_tiktoken_encoding() -> None:
+    # Chonkie's string-based tokenizer resolution tries the HuggingFace
+    # `tokenizers` backend first and falls through to tiktoken only on
+    # failure — which means passing the string "cl100k_base" triggers an
+    # HTTP request to huggingface.co and a multi-minute 429 retry loop
+    # whenever HF is rate-limiting. Pre-resolving to a tiktoken.Encoding
+    # forces Chonkie's type-sniffing path and skips HF entirely.
+    assert isinstance(_TOKENIZER, tiktoken.Encoding)
 
 
 def test_small_document_produces_single_chunk_with_full_text(tmp_path: Path) -> None:
