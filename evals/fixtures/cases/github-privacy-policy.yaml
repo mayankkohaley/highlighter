@@ -1,0 +1,35 @@
+# Stage 3 eval cases for the GitHub privacy policy.
+# Dimension: formal / legalese — tests extracting specific data items out of
+# hedged legal prose, without pulling in boilerplate.
+
+document: github-privacy-policy.md
+
+cases:
+
+  - name: github-personal-data-from-user
+    chunk_selector:
+      section_path:
+        - "GitHub General Privacy Statement"
+        - "Personal Data We Collect"
+        - "From You"
+    query:
+      question: What personal information does GitHub collect directly from the user?
+      sub_questions:
+        - What identity or account information is collected?
+        - What payment or billing information is collected?
+        - What user-authored content or communications are collected?
+      rubric: >
+        Useful excerpts name a specific category or item of personal data
+        that GitHub collects directly from the user. Do not include
+        statements about WHY GitHub collects data, what it does with it,
+        or legal bases — only the data items themselves.
+    expected_excerpts:
+      - "Account Data: We collect certain information when you open an account"
+      - "we collect Personal Data included as part of the information"
+      - "Demographic information"
+      - "reviews, or interactive features"
+      - "For paid subscriptions, we collect details like name, billing address"
+      - "create a user profile, which may include a photo, additional email addresses, job title, or biography"
+      - "information provided for promotional communications"
+      - "collect details like code, text, or multimedia"
+
