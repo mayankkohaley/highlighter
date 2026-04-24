@@ -3,6 +3,17 @@ from pathlib import Path
 from evals.fixtures import load_cases
 
 
+def test_load_cases_returns_empty_list_for_all_comments_file(tmp_path: Path) -> None:
+    # A YAML file with only comments is valid YAML but parses to None.
+    # We want to treat it as "no cases" so users can comment out WIP fixtures.
+    yaml_path = tmp_path / "fixture.yaml"
+    yaml_path.write_text("# all commented out\n# document: whatever.md\n# cases: []\n")
+
+    cases = load_cases(yaml_path)
+
+    assert cases == []
+
+
 def test_load_cases_returns_all_cases_with_document_filled_in(tmp_path: Path) -> None:
     yaml_path = tmp_path / "fixture.yaml"
     yaml_path.write_text(

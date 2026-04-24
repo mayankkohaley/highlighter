@@ -45,8 +45,14 @@ class _FixtureFile(BaseModel):
 
 
 def load_cases(path: Path | str) -> list[EvalCase]:
-    """Load all cases from a fixture file, stamping the shared `document` onto each."""
+    """Load all cases from a fixture file, stamping the shared `document` onto each.
+
+    A file containing only comments (or empty) is treated as "no cases" — handy
+    for commenting out a WIP fixture without deleting it.
+    """
     data = yaml.safe_load(Path(path).read_text())
+    if data is None:
+        return []
     fixture = _FixtureFile.model_validate(data)
     return [
         EvalCase(
