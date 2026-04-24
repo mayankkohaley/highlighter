@@ -1,0 +1,29 @@
+# Stage 3 eval cases for the Climate Change in Malawi Wikipedia article.
+# Dimension: exposition / mixed-claims — tests extracting concrete impact
+# statements distributed across descriptive prose.
+
+document: climate-change-in-malawi.md
+
+cases:
+
+  - name: malawi-economic-impacts
+    chunk_selector:
+      section_path:
+        - "Climate Change in Malawi"
+        - "Impact on the Natural Environment"
+        - "Economic impacts"
+    query:
+      question: What economic impacts does climate change have on Malawi?
+      sub_questions:
+        - Which sectors of the economy are affected?
+        - What are the quantitative impacts (GDP, income, productivity)?
+        - What population groups are most affected economically?
+      rubric: >
+        Useful excerpts name a specific economic impact of climate change
+        on Malawi — a sector affected, a quantitative loss or change, or
+        an affected population segment. Avoid generic statements about
+        climate change unless they include a concrete economic claim.
+    expected_excerpts:
+      - "variability in crop yields, impacting agricultural productivity"
+      - "the World Bank cautions that climate change could potentially diminish Malawi's GDP by 3 to 9 percent"
+      - "flooding poses a significant threat to the road infrastructure"
