@@ -389,14 +389,14 @@ def test_per_chunk_exception_does_not_kill_pipeline(tmp_path: Path) -> None:
 
 
 def test_concurrent_extraction_respects_ceiling(tmp_path: Path) -> None:
-    # A doc with >8 chunks must never run more than 8 per-chunk extracts at
+    # A doc with >32 chunks must never run more than 32 per-chunk extracts at
     # the same time. Rate-limit churn risk scales linearly with fan-out —
     # the ceiling is the guardrail, and this test pins it.
     md = tmp_path / "doc.md"
-    body = "\n\n".join(f"Paragraph {i} " + "word " * 20 for i in range(30))
+    body = "\n\n".join(f"Paragraph {i} " + "word " * 20 for i in range(150))
     md.write_text(f"# Title\n\n{body}\n")
     chunk_count = len(chunk_document(normalize(md), chunk_size=80, chunk_overlap=10))
-    assert chunk_count > 8, f"test needs >8 chunks to exercise the cap, got {chunk_count}"
+    assert chunk_count > 32, f"test needs >32 chunks to exercise the cap, got {chunk_count}"
 
     expand_agent = build_query_agent()
     extract_agent = build_extractor_agent()
@@ -426,4 +426,4 @@ def test_concurrent_extraction_respects_ceiling(tmp_path: Path) -> None:
             extract_agent=extract_agent,
         )
 
-    assert state["peak"] <= 8, f"peak concurrency {state['peak']} exceeded ceiling of 8"
+    assert state["peak"] <= 32, f"peak concurrency {state['peak']} exceeded ceiling of 32"
