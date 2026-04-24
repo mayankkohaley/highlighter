@@ -60,8 +60,12 @@ def chunk_document(
     raw_chunks = refinery(chunker(doc.text))
     chunks: list[Chunk] = []
     for c in raw_chunks:
-        line_start = _line_number_at(doc.text, c.start_index)
-        line_end = _line_number_at(doc.text, max(c.end_index - 1, c.start_index))
+        # OverlapRefinery(merge=True) prepends previous-chunk tail into
+        # c.text but leaves c.start_index pointing at the post-prefix split,
+        # so subtract the prefix length to get the true start of c.text.
+        effective_start = c.start_index - len(c.context or "")
+        line_start = _line_number_at(doc.text, effective_start)
+        line_end = _line_number_at(doc.text, max(c.end_index - 1, effective_start))
         chunks.append(Chunk(
             text=c.text,
             line_start=line_start,

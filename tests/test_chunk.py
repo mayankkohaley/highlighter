@@ -66,6 +66,32 @@ def test_chunk_section_path_matches_doc_at_line_start(tmp_path: Path) -> None:
         assert c.section_path == doc.section_path_for_line(c.line_start)
 
 
+def test_chunk_line_start_matches_where_text_actually_begins(tmp_path: Path) -> None:
+    # When OverlapRefinery prepends a prefix to chunk N+1, chunk.text begins
+    # EARLIER in the document than the post-prefix split point. chunk.line_start
+    # must reflect where chunk.text actually begins — otherwise downstream line
+    # arithmetic lands on the wrong doc line.
+    md = tmp_path / "doc.md"
+    paragraphs = "\n\n".join(
+        f"Paragraph {i} has enough unique text to be locatable." for i in range(30)
+    )
+    md.write_text(f"# Title\n\n{paragraphs}\n")
+    doc = normalize(md)
+
+    chunks = chunk_document(doc, chunk_size=100, chunk_overlap=30)
+    assert len(chunks) >= 2
+
+    for c in chunks:
+        probe = c.text[:80]
+        idx = doc.text.find(probe)
+        assert idx != -1, f"chunk text probe not found in doc: {probe!r}"
+        expected_line = doc.text.count("\n", 0, idx) + 1
+        assert c.line_start == expected_line, (
+            f"chunk.line_start={c.line_start} but chunk.text actually starts "
+            f"on doc line {expected_line}"
+        )
+
+
 def test_consecutive_chunks_overlap_with_previous_tail(tmp_path: Path) -> None:
     md = tmp_path / "doc.md"
     paragraphs = "\n\n".join(
