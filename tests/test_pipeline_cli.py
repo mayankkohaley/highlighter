@@ -245,3 +245,52 @@ def test_cli_check_baseline_passes_when_scores_hold(
         )
 
     assert rc == 0
+
+
+def test_cli_chunk_size_flag_splits_doc_into_multiple_chunks(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    docs = tmp_path / "docs"
+    cases = tmp_path / "pipeline"
+    docs.mkdir()
+    cases.mkdir()
+    paragraphs = "\n\n".join(f"anchor {i} body words." for i in range(30))
+    (docs / "doc.md").write_text(f"# Title\n\n{paragraphs}\n")
+    (cases / "case.yaml").write_text(
+        "document: doc.md\n"
+        "cases:\n"
+        "  - name: c\n"
+        '    question: "q"\n'
+        "    expected_excerpts: []\n"
+    )
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    # Canned extractor returns one "anchor" span per call; predicted count
+    # equals chunks processed, so we can observe the flag's effect.
+    extraction = _ExtractorOutput(excerpts=[RawExcerpt(text="anchor")])
+
+    from evals.pipeline.__main__ import _main
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        rc = _main(
+            [
+                "prog",
+                "--cases-dir", str(cases),
+                "--docs-dir", str(docs),
+                "--chunk-size", "60",
+                "--chunk-overlap", "10",
+            ],
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+        )
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    anchor_lines = [line for line in out.splitlines() if line.strip() == "> anchor"]
+    assert len(anchor_lines) > 1

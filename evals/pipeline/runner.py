@@ -28,12 +28,16 @@ def run_pipeline_case(
     case: PipelineCase,
     *,
     docs_dir: Path | str,
+    chunk_size: int = 2000,
+    chunk_overlap: int = 200,
     expand_agent: Agent[None, _QueryExpansion] | None = None,
     extract_agent: Agent[None, _ExtractorOutput] | None = None,
 ) -> PipelineCaseResult:
     result = run_pipeline(
         Path(docs_dir) / case.document,
         case.question,
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
         expand_agent=expand_agent,
         extract_agent=extract_agent,
     )

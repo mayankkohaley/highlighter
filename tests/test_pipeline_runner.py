@@ -51,3 +51,51 @@ def test_run_pipeline_case_scores_end_to_end(tmp_path: Path) -> None:
     assert result.query.question == "What do I need?"
     assert result.query.sub_questions == ["What runtime is needed?"]
     assert result.query.rubric.startswith("Useful excerpts")
+
+
+def test_run_pipeline_case_respects_custom_chunk_size(tmp_path: Path) -> None:
+    # A multi-paragraph doc that fits in one default chunk (2000 tokens) but
+    # splits into multiple chunks at a very small chunk_size. A canned extractor
+    # returning one "anchor" span per call gives us a way to observe chunk
+    # count: len(predicted) == number of chunks the extractor saw.
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    paragraphs = "\n\n".join(f"anchor {i} body words." for i in range(30))
+    (docs / "doc.md").write_text(f"# Title\n\n{paragraphs}\n")
+
+    expand_agent = build_query_agent()
+    extract_agent = build_extractor_agent()
+    expansion = _QueryExpansion(sub_questions=[], rubric="")
+    # Every chunk contains "anchor" — canned extractor returns it each call.
+    extraction = _ExtractorOutput(excerpts=[RawExcerpt(text="anchor")])
+
+    case = PipelineCase(
+        name="c",
+        document="doc.md",
+        question="?",
+        expected_excerpts=[],
+    )
+
+    with (
+        expand_agent.override(model=canned_function_model(expansion)),
+        extract_agent.override(model=canned_function_model(extraction)),
+    ):
+        small = run_pipeline_case(
+            case,
+            docs_dir=docs,
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+            chunk_size=60,
+            chunk_overlap=10,
+        )
+        large = run_pipeline_case(
+            case,
+            docs_dir=docs,
+            expand_agent=expand_agent,
+            extract_agent=extract_agent,
+            chunk_size=5000,
+            chunk_overlap=10,
+        )
+
+    assert len(small.predicted) > len(large.predicted)
+    assert len(large.predicted) == 1
