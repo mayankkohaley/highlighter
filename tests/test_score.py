@@ -28,3 +28,13 @@ def test_unrelated_prediction_drops_precision() -> None:
 
     assert result.precision == 0.5
     assert result.recall == 1.0
+
+
+def test_missing_expected_phrase_drops_recall() -> None:
+    result = score_case(
+        predicted=["Node.js 20 or later"],
+        expected=["Node.js 20 or later", "Python 3.10 or later"],
+    )
+
+    assert result.precision == 1.0
+    assert result.recall == 0.5
